@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-4">場地與人員管理</h2>
+
+  <!-- 場地管理（使用下拉選單刪除） -->
+  <div class="card mb-4">
+    <div class="card-header">場地管理</div>
+    <div class="card-body">
+      <!-- 新增場地表單 -->
+      <form method="POST" action="{{ url_for('admin_dashboard') }}" class="mb-3">
+        <div class="input-group">
+          <input type="text" name="venue_name" class="form-control" placeholder="請輸入場地名稱" required>
+          <button type="submit" class="btn btn-outline-success">新增</button>
+        </div>
+      </form>
+
+      <!-- 刪除場地表單（下拉選單） -->
+      <form method="POST" action="{{ url_for('delete_venue_by_select') }}">
+        <div class="input-group">
+          <select name="delete_venue_id" class="form-select" required>
+            <option value="">-- 請選擇要刪除的場地 --</option>
+            {% for venue in venues %}
+            <option value="{{ venue.id }}">{{ venue.name }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn btn-outline-danger" onclick="return confirm('確定要刪除這個場地嗎？');">刪除</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 管理員指派 -->
+  <div class="card mb-4">
+    <div class="card-header">管理員指派</div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('admin_dashboard') }}">
+        <div class="mb-3">
+          <label for="selected_venue" class="form-label">選擇場地</label>
+          <select id="selected_venue" name="selected_venue" class="form-select" onchange="this.form.submit()">
+            <option value="">-- 請選擇場地 --</option>
+            {% for venue in venues %}
+            <option value="{{ venue.id }}" {% if selected_venue and selected_venue.id == venue.id %}selected{% endif %}>{{ venue.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        {% if selected_venue %}
+        <!-- 目前管理者解除 -->
+        <div class="card mb-3">
+          <div class="card-header">{{ selected_venue.name }} 的目前管理員</div>
+          <div class="card-body">
+            {% if selected_venue.managers %}
+              {% for manager in selected_venue.managers %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="unassign_users" value="{{ manager.line_id }}" id="unassign_{{ manager.line_id }}">
+                <label class="form-check-label" for="unassign_{{ manager.line_id }}">{{ manager.display_name }} (ID: {{ manager.line_id }})</label>
+              </div>
+              {% endfor %}
+              <button type="submit" name="action" value="unassign" class="btn btn-outline-danger">解除管理員</button>
+            {% else %}
+              <p class="text-muted">此場地目前無管理員</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- 指派使用者為管理員 -->
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>指派</th>
+                <th>名稱</th>
+                <th>用戶 ID</th>
+                <th>權限</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for user in users if user.permission in ['manager'] %}
+              <tr>
+                <td><input class="form-check-input" type="checkbox" name="assign_users" value="{{ user.line_id }}"></td>
+                <td>{{ user.display_name }}</td>
+                <td>{{ user.line_id }}</td>
+                <td>{{ user.permission }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="text-end">
+          <button type="submit" name="action" value="assign" class="btn btn-outline-success">指派為 {{ selected_venue.name }} 管理員</button>
+        </div>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <!-- 使用者權限設定 -->
+  <div class="card">
+    <div class="card-header">使用者權限設定</div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('update_permissions') }}">
+        <div class="table-responsive">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>名稱</th>
+                <th>用戶 ID</th>
+                <th>權限</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for user in users %}
+              <tr>
+                <td>{{ user.display_name }}</td>
+                <td>{{ user.line_id }}</td>
+                <td>
+                  <select name="permission_{{ user.line_id }}" class="form-select form-select-sm">
+                    <option value="guest" {% if user.permission == 'guest' %}selected{% endif %}>guest</option>
+                    <option value="manager" {% if user.permission == 'manager' %}selected{% endif %}>manager</option>
+                    <option value="admin" {% if user.permission == 'admin' %}selected{% endif %}>admin</option>
+                  </select>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="text-end">
+          <button type="submit" class="btn btn-outline-success">確認變更</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

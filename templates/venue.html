@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+
+{% block title %}{{ venue.name }} - 羽球零打預約{% endblock %}
+
+{% block content %}
+
+<!-- Venue Header -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="text-center mb-4">
+      <h1 class="display-4 fw-bold text-gradient mb-3">
+        <i class="fa-solid fa-house me-3" style="color: var(--primary-color);"></i>
+        {{ venue.name }}
+      </h1>
+      <p class="lead text-muted">查看可預約時段並完成您的零打報名</p>
+    </div>
+    
+    <div class="card venue-info-card mb-4">
+      <div class="card-body">
+	  
+        <div class="row" style="height: 300px;">
+          <div class="col-7">
+            <div class="d-flex flex-column h-100">
+              <div class="flex-fill mb-2">
+			    <h5 class="fw-semibold mb-3">
+				  <i class="fas fa-info-circle me-2" style="color: var(--primary-color);"></i>
+			        使用規定:
+				  </i>
+				</h5>
+                {% if venue.rules %}
+                  <div class="rules-content">
+                    <p class="rules-text">{{ venue.rules }}</p>
+                  </div>
+                {% else %}
+                  <div class="text-center py-3">
+                    <i class="fas fa-exclamation-circle text-muted mb-2" style="font-size: 2rem;"></i>
+                    <p class="text-muted fst-italic">暫未提供使用規定</p>
+                  </div>
+                {% endif %}
+			  </div>
+              <div class="flex-fill">
+			    <h5 class="fw-semibold mb-3">
+				  <i class="fas fa-info-circle me-2" style="color: var(--primary-color);"></i>
+			        收費規則:
+				  </i>
+				</h5>
+                {% if venue.pricing %}
+                  <div class="rules-content">
+                    <p class="rules-text">{{ venue.pricing }}</p>
+                  </div>
+                {% else %}
+                  <div class="text-center py-3">
+                    <i class="fas fa-exclamation-circle text-muted mb-2" style="font-size: 2rem;"></i>
+                    <p class="text-muted fst-italic">暫未提供收費規則</p>
+                  </div>
+                {% endif %}
+			  </div>
+            </div>
+          </div>
+          <div class="col-5">
+            <div class="h-100">
+			    <h5 class="fw-semibold mb-3">
+				  <i class="fas fa-info-circle me-2" style="color: var(--primary-color);"></i>
+			        場地設施:
+				  </i>
+				</h5>
+                {% if venue.rules %}
+                  <div class="rules-content">
+                    <div class="facilities-container">
+                      {% if venue.facilities %}
+                        {% for facility in venue.facilities.split(',') %}
+                          {% if facility.strip() == '冷氣' %}
+                            <div class="facility-icon available" title="冷氣">
+                              <i class="fas fa-snowflake" style="width: 16px; text-align: center;"></i>
+                              <span style="margin-left: 8px;">冷氣</span>
+                            </div>	
+                          {% elif facility.strip() == '廁所' %}
+                            <div class="facility-icon available" title="廁所">
+                              <i class="fas fa-restroom" style="width: 16px; text-align: center;"></i>
+                              <span style="margin-left: 8px;">廁所</span>
+                            </div>
+                          {% elif facility.strip() == '淋浴間' %}
+                            <div class="facility-icon available" title="淋浴間">
+                              <i class="fas fa-shower" style="width: 16px; text-align: center;"></i>
+                              <span style="margin-left: 8px;">淋浴間</span>
+                            </div>
+                          {% elif facility.strip() == '停車場' %}
+                            <div class="facility-icon available" title="停車場">
+                              <i class="fas fa-parking" style="width: 16px; text-align: center;"></i>
+                              <span style="margin-left: 8px;">停車場</span>
+                            </div>
+                          {% elif facility.strip() == '飲水機' %}
+                            <div class="facility-icon available" title="飲水機">
+                              <i class="fas fa-tint" style="width: 16px; text-align: center;"></i>
+                              <span style="margin-left: 8px;">飲水機</span>
+                            </div>
+                          {% elif facility.strip() == '更衣室' %}
+                            <div class="facility-icon available" title="更衣室">
+                              <i class="fas fa-door-open" style="width: 16px; text-align: center;"></i>
+                              <span style="margin-left: 8px;">更衣室</span>
+                            </div>
+                          {% elif facility.strip() == '器材租借' %}
+                            <div class="facility-icon available" title="器材租借">
+                              <i class="fas fa-tools" style="width: 16px; text-align: center;"></i>
+                              <span style="margin-left: 8px;">器材租借</span>
+                            </div>
+                          {% elif facility.strip() == 'Wi-Fi' %}
+                            <div class="facility-icon available" title="Wi-Fi">
+                              <i class="fas fa-wifi" style="width: 16px; text-align: center;"></i>
+                              <span style="margin-left: 8px;">WiFi</span>
+                            </div>
+                          {% endif %}
+                        {% endfor %}
+                      {% endif %}
+                    </div>
+                  </div>
+                {% else %}
+                  <div class="text-center py-3">
+                    <i class="fas fa-exclamation-circle text-muted mb-2" style="font-size: 2rem;"></i>
+                    <p class="text-muted fst-italic">暫未提供設施資訊</p>
+                  </div>
+                {% endif %}
+			</div>
+          </div>
+        </div>
+	    
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Timeslots Section -->
+{% if timeslots %}
+<div class="row mb-4">
+  <div class="col-12">
+    <h3 class="text-center mb-4">
+      <i class="fas fa-calendar-alt me-2" style="color: var(--primary-color);"></i>
+      可預約時段
+    </h3>
+  </div>
+</div>
+
+{% for slot in timeslots %}
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card timeslot-card">
+      <div class="card-header">
+        <div class="row align-items-center">
+          <div class="col-md-6">
+            <div class="timeslot-info">
+              <h5 class="mb-1">
+                <i class="fas fa-calendar-day"></i>
+                {{ slot.date }}
+				<p></p>
+                <i class="fas fa-clock"></i>
+                {{ slot.start_time }}-{{ slot.end_time }}
+              </h5>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="capacity-info">
+              <div class="capacity-stats mb-2">
+                <span class="capacity-badge">
+                  <i class="fas fa-users me-2"></i>
+                  已報名: {{ bookings[slot.id].total }} / 上限: {{ slot.capacity }} 人
+                </span>
+              </div>
+              <div class="progress" style="height: 8px; border-radius: 4px;">
+                <div class="progress-bar" 
+                     style="width: {{ (bookings[slot.id].total / slot.capacity * 100) if slot.capacity > 0 else 0 }}%; 
+                            background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card-body">
+        <!-- Booking Form -->
+        {% if current_user.is_authenticated %}
+        <div class="booking-form-section mb-4">
+          <h6 class="fw-semibold mb-3">
+            <i class="fas fa-plus-circle me-2" style="color: var(--primary-color);"></i>
+            我要報名這個時段
+          </h6>
+          <form action="{{ url_for('book', timeslot_id=slot.id) }}" method="post">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label">顯示名稱</label>
+                <input type="text" name="display_name" class="form-control" 
+                       placeholder="請輸入您的名稱" required>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">預約人數</label>
+                <input type="number" name="number" class="form-control" 
+                       placeholder="人數" min="1" max="{{ slot.capacity - bookings[slot.id].total }}" required>
+              </div>
+              <div class="col-md-5">
+                <label class="form-label">備註說明 <span class="text-muted small">(選填)</span></label>
+                <input type="text" name="note" class="form-control" 
+                       placeholder="如有特殊需求或備註請填寫">
+              </div>
+              <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-success w-100">
+                  <i class="fas fa-check me-2"></i>
+                  確認報名
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+        {% else %}
+        <div class="text-center py-3">
+          <i class="fas fa-sign-in-alt text-muted mb-3" style="font-size: 2.5rem;"></i>
+          <h6 class="text-muted mb-3">請先登入才能進行報名</h6>
+          <a href="{{ url_for('mock_login') }}" class="btn btn-primary">
+            <i class="fas fa-sign-in-alt me-2"></i>立即登入
+          </a>
+        </div>
+        {% endif %}
+
+        <hr class="my-4">
+
+        <!-- Booking List -->
+        <div class="booking-list-section">
+          <h6 class="fw-semibold mb-3">
+            <i class="fas fa-users me-2" style="color: var(--primary-color);"></i>
+            目前報名名單
+          </h6>
+          
+          {% if bookings[slot.id].records %}
+          <div class="booking-items">
+            {% for b in bookings[slot.id].records %}
+            <div class="booking-item">
+              <div class="row align-items-center">
+                <div class="col-md-8">
+                  <div class="booking-info">
+                    <div class="booking-name mb-2">
+                      <i class="fas fa-user-circle me-2" style="color: var(--primary-color);"></i>
+                      <strong>{{ b.display_name }}</strong>
+                      <span class="sport-badge ms-2">{{ b.number_of_people }}人</span>
+                    </div>
+                    {% if b.note %}
+                    <div class="booking-note">
+                      <i class="fas fa-sticky-note me-2 text-muted"></i>
+                      <span class="text-muted small">備註: {{ b.note }}</span>
+                    </div>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="col-md-4 text-end">
+                  {% if current_user.is_authenticated and (
+                        b.user_id == current_user.id or
+                        current_user.permission == 'admin' or
+                        current_user.id in venue_managers
+                      )%}
+                  <form method="POST" action="{{ url_for('delete_booking', booking_id=b.id) }}" 
+                        style="display:inline;" 
+                        onsubmit="return confirm('確定要取消這筆預約嗎？');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                      <i class="fas fa-times me-1"></i>取消預約
+                    </button>
+                  </form>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% if not loop.last %}<hr class="booking-divider">{% endif %}
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="empty-booking-state">
+            <div class="text-center py-4">
+              <i class="fas fa-calendar-times text-muted mb-3" style="font-size: 2.5rem;"></i>
+              <h6 class="text-muted mb-2">目前還沒有人報名這個時段</h6>
+              <p class="text-muted small mb-0">成為第一個報名的人吧！</p>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% else %}
+<div class="row">
+  <div class="col-12">
+    <div class="card text-center py-5">
+      <div class="card-body">
+        <i class="fas fa-calendar-times mb-4" style="font-size: 4rem; color: var(--secondary-color);"></i>
+        <h3 class="text-muted mb-3">目前沒有開放的時段</h3>
+        <p class="text-muted mb-4">請稍後再回來查看，或聯絡場地管理員了解時段安排。</p>
+        <a href="{{ url_for('index') }}" class="btn btn-primary">
+          <i class="fas fa-arrow-left me-2"></i>回到場地總覽
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<style>
+.text-gradient {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.venue-info-card {
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid transparent;
+    background-image: linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)),
+                      linear-gradient(135deg, var(--primary-color), var(--accent-color-1));
+    background-origin: border-box;
+    background-clip: content-box, border-box;
+}
+
+.timeslot-card {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.timeslot-card:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-4px);
+}
+
+.timeslot-info h5 {
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+
+.capacity-info {
+    text-align: right;
+}
+
+.capacity-badge {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    display: inline-block;
+}
+
+.booking-form-section {
+    background: var(--accent-color-1);
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 2px solid var(--secondary-color);
+}
+
+.booking-item {
+    padding: 1rem 0;
+}
+
+.booking-divider {
+    margin: 0.5rem 0;
+    border-color: var(--secondary-color);
+}
+
+.booking-name strong {
+    color: var(--text-dark);
+    font-size: 1.1rem;
+}
+
+.empty-booking-state {
+    background: var(--secondary-color);
+    border-radius: 12px;
+    margin: 1rem 0;
+}
+
+.venue-status-section {
+    padding: 1rem;
+}
+
+.rules-content {
+    background: rgba(255, 255, 255, 0.6);
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.rules-text {
+    margin-bottom: 0;
+    line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+    .display-4 {
+        font-size: 2rem;
+    }
+    
+    .capacity-info {
+        text-align: left;
+        margin-top: 1rem;
+    }
+    
+    .booking-form-section {
+        padding: 1rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,729 @@
+{% extends "base.html" %}
+
+{% block title %}場地管理員後台{% endblock %}
+
+{% block content %}
+
+
+{% if venues %}
+  {% for venue in venues %}
+  <div class="row mb-5">
+    <div class="col-12">
+      <div class="card venue-management-card">
+        <div class="card-header">
+          <div class="row align-items-center">
+            <div class="col-md-8">
+              <h4 class="mb-0">
+                <i class="fa-solid fa-house me-2"></i>
+                {{ venue.name }}
+              </h4>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-body">
+          <!-- 時段管理區 -->
+          <div class="management-section">
+            <h5 class="section-title mb-4">
+              <i class="fas fa-calendar-alt me-2" style="color: var(--primary-color);"></i>
+              報名時段管理
+            </h5>
+
+
+            <!-- 現有時段列表 -->
+            {% if venue.timeslots %}
+            <div class="existing-timeslots mb-4">
+              <h6 class="fw-semibold mb-3">
+                <i class="fas fa-list me-2"></i>
+                目前開放時段
+              </h6>
+              <div class="timeslots-grid">
+                {% for slot in venue.timeslots %}
+                <div class="timeslot-item">
+                  <div class="timeslot-info">
+                    <div class="timeslot-date">
+                      <i class="fas fa-calendar-day me-2"></i>
+                      {{ slot.date }}
+                    </div>
+                    <div class="timeslot-time">
+                      <i class="fas fa-clock me-2"></i>
+                      {{ slot.start_time[:5] }} - {{ slot.end_time[:5] }}
+                    </div>
+                    <div class="timeslot-capacity">
+                      <i class="fas fa-users me-1"></i>
+                    報名狀況 {{ slot.bookings | sum(attribute='number_of_people') }} / {{ slot.capacity }} 人
+                    </div>
+                    <div class="timeslot-time">
+                      <i class="fa-solid fa-star me-2"></i>
+                     {{ slot.level_min }} - {{ slot.level_max }} 級
+                    </div>
+                  </div>
+                  <div class="timeslot-actions">
+                    <form method="POST" action="{{ url_for('delete_timeslot', timeslot_id=slot.id) }}" 
+                          style="display:inline;" 
+                          onsubmit="return confirm('確定要刪除這個時段？相關預約紀錄也會一併刪除。')">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-trash-alt me-1"></i>刪除
+                      </button>
+                    </form>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% else %}
+            <div class="empty-timeslots mb-4">
+              <div class="text-center py-4">
+                <i class="fas fa-calendar-times text-muted mb-3" style="font-size: 2.5rem;"></i>
+                <h6 class="text-muted mb-2">尚無開放時段</h6>
+                <p class="text-muted small mb-0">請新增時段讓使用者可以進行預約</p>
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- 新增時段表單 -->
+            <div class="add-timeslot-section">
+              <h6 class="fw-semibold mb-3">
+                <i class="fas fa-plus-circle me-2" style="color: var(--primary-color);"></i>
+                新增時段
+              </h6>
+              <form action="{{ url_for('add_timeslot', venue_id=venue.id) }}" method="POST">
+                <div class="row g-3">
+                  <div class="col-md-3">
+                    <label class="form-label">日期</label>
+                    <input type="date" name="date" class="form-control" required>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label">開始時間</label>
+                    <input type="time" name="start_time" class="form-control" required>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label">結束時間</label>
+                    <input type="time" name="end_time" class="form-control" required>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">人數上限</label>
+                    <input type="number" name="capacity" class="form-control" min="1" placeholder="例如: 8" required>
+                  </div>
+                  <div class="col-md-2">
+                      <label class="form-label">程度範圍</label>
+                      <div class="range-slider-container">
+                          <div class="single-dual-range">
+                              <div class="slider-track"></div>
+                              <div class="slider-range" id="sliderRange"></div>
+                              <div class="thumb thumb-min" id="thumbMin"></div>
+                              <div class="thumb thumb-max" id="thumbMax"></div>
+                          </div>
+                          <div class="range-values">
+                              <span>1</span>
+                              <span>18</span>
+                          </div>
+                          <div class="selected-range" id="rangeDisplay">範圍: 1 - 18</div>
+                      </div>
+                      <!-- 隱藏的輸入欄位，用於表單提交 -->
+                      <input type="hidden" name="level_min" id="levelMinValue" value="1">
+                      <input type="hidden" name="level_max" id="levelMaxValue" value="18">
+                  </div>			  
+                  <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-success">
+                      <i class="fas fa-plus me-2"></i>新增
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- 卡片底部統計 -->
+          <div class="card-footer">
+            <div class="row text-center">
+              <div class="col-md-4">
+                <div class="stat-item">
+                  <i class="fas fa-calendar-check text-primary mb-2"></i>
+                  <div class="stat-number">{{ venue.timeslots|length }}</div>
+                  <div class="stat-label">開放時段</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="stat-item">
+                  <i class="fas fa-users text-success mb-2"></i>
+                  <div class="stat-number">
+                    {% set total_bookings = [] %}
+                    {% for slot in venue.timeslots %}
+                      {% set _ = total_bookings.extend(slot.bookings) %}
+                    {% endfor %}
+                    {{ total_bookings|length }}
+                  </div>
+                  <div class="stat-label">預約人次</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="stat-item">
+                  <i class="fas fa-chart-line text-warning mb-2"></i>
+                  <div class="stat-number">
+                    {% if venue.timeslots %}
+                      {% set total_capacity = venue.timeslots|sum(attribute='capacity') %}
+                      {% set total_booked = total_bookings|sum(attribute='number_of_people') %}
+                      {{ ((total_booked / total_capacity * 100) if total_capacity > 0 else 0)|round|int }}%
+                    {% else %}
+                      0%
+                    {% endif %}
+                  </div>
+                  <div class="stat-label">預約率</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+		  <hr class="section-divider">
+
+          <!-- 場地資訊管理區 -->
+          <div class="management-section mb-4">
+            <h5 class="section-title">
+              <i class="fas fa-info-circle me-2" style="color: var(--primary-color);"></i>
+              場地資訊管理
+            </h5>
+            
+            <form method="POST" action="{{ url_for('update_venue_rules', venue_id=venue.id) }}">
+              <!-- 基本資訊區塊 -->
+              <div class="info-block mb-4">
+                <h6 class="block-title">
+                  <i class="fas fa-map-marker-alt me-2"></i>基本資訊
+                </h6>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label">聯絡電話</label>
+                    <input type="tel" name="phone" class="form-control" 
+                           value="{{ venue.phone or '' }}" placeholder="例如: 02-12345678">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">縣市</label>
+                    <select name="city" class="form-select">
+                      <option value="">請選擇縣市</option>
+                      <option value="台北市" {{ 'selected' if venue.city == '台北市' }}>台北市</option>
+                      <option value="新北市" {{ 'selected' if venue.city == '新北市' }}>新北市</option>
+                      <option value="桃園市" {{ 'selected' if venue.city == '桃園市' }}>桃園市</option>
+                      <option value="基隆市" {{ 'selected' if venue.city == '基隆市' }}>基隆市</option>
+                      <option value="新竹市" {{ 'selected' if venue.city == '新竹市' }}>新竹市</option>
+                      <option value="新竹縣" {{ 'selected' if venue.city == '新竹縣' }}>新竹縣</option>
+                    </select>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">詳細地址</label>
+                    <input type="text" name="address" class="form-control" 
+                           value="{{ venue.address or '' }}" placeholder="請輸入詳細地址">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 設施區塊 - 修正版本 -->
+              <div class="info-block mb-4">
+                <h6 class="block-title">
+                  <i class="fas fa-building me-2"></i>場地設施
+                </h6>
+                <div class="row g-2">
+                  <div class="col-md-3 col-6">
+                    <div class="form-check facility-check">
+                      <input class="form-check-input" type="checkbox" name="facilities" value="冷氣"
+                             id="ac_{{ venue.id }}" 
+                             {% if venue.facilities and '冷氣' in venue.facilities.split(',') %}checked{% endif %}>
+                      <label class="form-check-label" for="ac_{{ venue.id }}">
+                        <i class="fas fa-snowflake me-2"></i>冷氣
+                      </label>
+                    </div>
+                  </div>
+                  <div class="col-md-3 col-6">
+                    <div class="form-check facility-check">
+                      <input class="form-check-input" type="checkbox" name="facilities" value="廁所"
+                             id="toilet_{{ venue.id }}" 
+                             {% if venue.facilities and '廁所' in venue.facilities.split(',') %}checked{% endif %}>
+                      <label class="form-check-label" for="toilet_{{ venue.id }}">
+                        <i class="fas fa-restroom me-2"></i>廁所
+                      </label>
+                    </div>
+                  </div>
+                  <div class="col-md-3 col-6">
+                    <div class="form-check facility-check">
+                      <input class="form-check-input" type="checkbox" name="facilities" value="淋浴間"
+                             id="shower_{{ venue.id }}" 
+                             {% if venue.facilities and '淋浴間' in venue.facilities.split(',') %}checked{% endif %}>
+                      <label class="form-check-label" for="shower_{{ venue.id }}">
+                        <i class="fas fa-shower me-2"></i>淋浴間
+                      </label>
+                    </div>
+                  </div>
+                  <div class="col-md-3 col-6">
+                    <div class="form-check facility-check">
+                      <input class="form-check-input" type="checkbox" name="facilities" value="停車場"
+                             id="parking_{{ venue.id }}" 
+                             {% if venue.facilities and '停車場' in venue.facilities.split(',') %}checked{% endif %}>
+                      <label class="form-check-label" for="parking_{{ venue.id }}">
+                        <i class="fas fa-parking me-2"></i>停車場
+                      </label>
+                    </div>
+                  </div>
+                  <div class="col-md-3 col-6">
+                    <div class="form-check facility-check">
+                      <input class="form-check-input" type="checkbox" name="facilities" value="飲水機"
+                             id="water_{{ venue.id }}" 
+                             {% if venue.facilities and '飲水機' in venue.facilities.split(',') %}checked{% endif %}>
+                      <label class="form-check-label" for="water_{{ venue.id }}">
+                        <i class="fas fa-tint me-2"></i>飲水機
+                      </label>
+                    </div>
+                  </div>
+                  <div class="col-md-3 col-6">
+                    <div class="form-check facility-check">
+                      <input class="form-check-input" type="checkbox" name="facilities" value="更衣室"
+                             id="locker_{{ venue.id }}" 
+                             {% if venue.facilities and '更衣室' in venue.facilities.split(',') %}checked{% endif %}>
+                      <label class="form-check-label" for="locker_{{ venue.id }}">
+                        <i class="fas fa-door-open me-2"></i>更衣室
+                      </label>
+                    </div>
+                  </div>
+                  <div class="col-md-3 col-6">
+                    <div class="form-check facility-check">
+                      <input class="form-check-input" type="checkbox" name="facilities" value="器材租借"
+                             id="equipment_{{ venue.id }}" 
+                             {% if venue.facilities and '器材租借' in venue.facilities.split(',') %}checked{% endif %}>
+                      <label class="form-check-label" for="equipment_{{ venue.id }}">
+                        <i class="fas fa-tools me-2"></i>器材租借
+                      </label>
+                    </div>
+                  </div>
+                  <div class="col-md-3 col-6">
+                    <div class="form-check facility-check">
+                      <input class="form-check-input" type="checkbox" name="facilities" value="Wi-Fi"
+                             id="wifi_{{ venue.id }}" 
+                             {% if venue.facilities and 'Wi-Fi' in venue.facilities.split(',') %}checked{% endif %}>
+                      <label class="form-check-label" for="wifi_{{ venue.id }}">
+                        <i class="fas fa-wifi me-2"></i>Wi-Fi
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 收費規則區塊 -->
+              <div class="info-block mb-4">
+                <h6 class="block-title">
+                  <i class="fas fa-dollar-sign me-2"></i>收費規則
+                </h6>
+                <textarea name="pricing" class="form-control" rows="4" 
+                          placeholder="請輸入收費標準，例如：&#10;平日：每小時 200 元&#10;假日：每小時 250 元">{{ venue.pricing or '' }}</textarea>
+              </div>
+
+              <!-- 使用規則區塊 -->
+              <div class="info-block mb-4">
+                <h6 class="block-title">
+                  <i class="fas fa-clipboard-list me-2"></i>使用規則
+                </h6>
+                <textarea name="rules" class="form-control" rows="4" 
+                          placeholder="請輸入場地使用規則，讓使用者了解注意事項...">{{ venue.rules or '' }}</textarea>
+              </div>
+
+              <div class="text-center">
+                <button type="submit" class="btn btn-primary btn-lg">
+                  <i class="fas fa-save me-2"></i>更新場地資訊
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>        
+      </div>
+    </div>
+  </div>
+		
+		
+		
+
+
+
+
+  
+  {% endfor %}
+{% else %}
+<div class="row">
+  <div class="col-12">
+    <div class="card text-center py-5">
+      <div class="card-body">
+        <i class="fas fa-user-slash mb-4" style="font-size: 4rem; color: var(--secondary-color);"></i>
+        <h3 class="text-muted mb-3">您目前尚未被指派管理任何場地</h3>
+        <p class="text-muted mb-4">請聯絡系統管理員為您指派場地管理權限。</p>
+        <a href="{{ url_for('index') }}" class="btn btn-primary">
+          <i class="fas fa-home me-2"></i>回到首頁
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<style>
+.text-gradient {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.management-section {
+    margin-bottom: 2rem;
+}
+
+.section-title {
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--secondary-color);
+}
+
+.section-divider {
+    border-color: var(--secondary-color);
+    margin: 2rem 0;
+}
+
+.info-block {
+    background: rgba(255, 255, 255, 0.8);
+    border: 2px solid var(--secondary-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.block-title {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--secondary-color);
+}
+
+.facility-check {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--secondary-color);
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.facility-check:hover {
+    background: rgba(255, 255, 255, 1);
+    border-color: var(--primary-color);
+}
+
+.facility-check .form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.facility-check .form-check-label {
+    font-weight: 500;
+    color: var(--text-dark);
+    cursor: pointer;
+    width: 100%;
+}
+
+.timeslots-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+}
+
+.timeslot-item {
+    background: var(--accent-color-1);
+    border: 2px solid var(--secondary-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.timeslot-item:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+.timeslot-info {
+    flex-grow: 1;
+}
+
+.timeslot-date, .timeslot-time, .timeslot-capacity {
+    margin-bottom: 0.5rem;
+    color: var(--text-dark);
+    font-weight: 500;
+}
+
+.timeslot-date {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.timeslot-actions {
+    margin-left: 1rem;
+}
+
+.empty-timeslots {
+    background: var(--secondary-color);
+    border-radius: var(--border-radius);
+    margin: 1rem 0;
+}
+
+.add-timeslot-section {
+    background: rgba(255, 255, 255, 0.8);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    border: 2px solid var(--secondary-color);
+}
+
+.stat-item {
+    padding: 1rem;
+}
+
+.stat-item i {
+    font-size: 1.5rem;
+    display: block;
+}
+
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin: 0.5rem 0;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.range-slider-container {
+    position: relative;
+    margin: 10px 0;
+}
+
+.single-dual-range {
+    position: relative;
+    height: 20px;
+    width: 100%;
+}
+
+.slider-track {
+    position: absolute;
+    top: 6px;
+    width: 100%;
+    height: 8px;
+    background: #ddd;
+    border-radius: 4px;
+}
+
+.slider-range {
+    position: absolute;
+    top: 6px;
+    height: 8px;
+    background: var(--primary-color);
+    border-radius: 4px;
+    opacity: 0.7;
+}
+
+.thumb {
+    position: absolute;
+    top: 0;
+    width: 20px;
+    height: 20px;
+    background: var(--primary-color);
+    border: 3px solid white;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    user-select: none;
+    z-index: 2;
+}
+
+.thumb:hover {
+    transform: scale(1.1);
+    transition: transform 0.1s;
+}
+
+.thumb.active {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    transform: scale(1.05);
+}
+
+.range-values {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    color: #666;
+    margin-top: 10px;
+}
+
+.selected-range {
+    text-align: center;
+    margin-top: 8px;
+    font-weight: 500;
+    color: var(--primary-color);
+}
+
+@media (max-width: 768px) {
+    .display-4 {
+        font-size: 2rem;
+    }
+    
+    .timeslots-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .timeslot-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .timeslot-actions {
+        margin-left: 0;
+    }
+    
+    .add-timeslot-section, .info-block {
+        padding: 1rem;
+    }
+    
+    .management-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .facility-check {
+        padding: 0.5rem;
+    }
+}
+</style>
+<script>
+    const container = document.querySelector('.single-dual-range');
+    const thumbMin = document.getElementById('thumbMin');
+    const thumbMax = document.getElementById('thumbMax');
+    const sliderRange = document.getElementById('sliderRange');
+    const rangeDisplay = document.getElementById('rangeDisplay');
+    const levelMinValue = document.getElementById('levelMinValue');
+    const levelMaxValue = document.getElementById('levelMaxValue');
+    
+    let isDragging = false;
+    let activeThumb = null;
+    let minVal = 1;
+    let maxVal = 18;
+    
+    function getValueFromPosition(x) {
+        const rect = container.getBoundingClientRect();
+        const percent = Math.max(0, Math.min(1, (x - rect.left) / rect.width));
+        return Math.round(1 + percent * 17); // 1-18 範圍
+    }
+    
+    function getPositionFromValue(value) {
+        return ((value - 1) / 17) * 100; // 轉換為百分比
+    }
+    
+    function updateSlider() {
+        // 確保最小值不大於最大值
+        if (minVal > maxVal) {
+            [minVal, maxVal] = [maxVal, minVal];
+        }
+        
+        const minPercent = getPositionFromValue(minVal);
+        const maxPercent = getPositionFromValue(maxVal);
+        
+        // 更新拇指位置
+        thumbMin.style.left = minPercent + '%';
+        thumbMax.style.left = maxPercent + '%';
+        
+        // 更新範圍條
+        sliderRange.style.left = minPercent + '%';
+        sliderRange.style.width = (maxPercent - minPercent) + '%';
+        
+        // 更新顯示和隱藏欄位
+        rangeDisplay.textContent = `範圍: ${minVal} - ${maxVal}`;
+        levelMinValue.value = minVal;
+        levelMaxValue.value = maxVal;
+    }
+    
+    function handleMouseDown(e, thumb) {
+        isDragging = true;
+        activeThumb = thumb;
+        thumb.classList.add('active');
+        e.preventDefault();
+    }
+    
+    function handleMouseMove(e) {
+        if (!isDragging || !activeThumb) return;
+        
+        const newValue = getValueFromPosition(e.clientX);
+        
+        if (activeThumb === thumbMin) {
+            minVal = Math.min(newValue, maxVal);
+        } else {
+            maxVal = Math.max(newValue, minVal);
+        }
+        
+        updateSlider();
+    }
+    
+    function handleMouseUp() {
+        if (activeThumb) {
+            activeThumb.classList.remove('active');
+        }
+        isDragging = false;
+        activeThumb = null;
+    }
+    
+    // 事件監聽器
+    thumbMin.addEventListener('mousedown', (e) => handleMouseDown(e, thumbMin));
+    thumbMax.addEventListener('mousedown', (e) => handleMouseDown(e, thumbMax));
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    
+    // 點擊軌道直接設定值
+    container.addEventListener('click', (e) => {
+        if (e.target === thumbMin || e.target === thumbMax) return;
+        
+        const clickValue = getValueFromPosition(e.clientX);
+        const distToMin = Math.abs(clickValue - minVal);
+        const distToMax = Math.abs(clickValue - maxVal);
+        
+        if (distToMin < distToMax) {
+            minVal = clickValue;
+        } else {
+            maxVal = clickValue;
+        }
+        
+        updateSlider();
+    });
+    
+    // 觸控支援
+    thumbMin.addEventListener('touchstart', (e) => {
+        handleMouseDown(e.touches[0], thumbMin);
+    });
+    
+    thumbMax.addEventListener('touchstart', (e) => {
+        handleMouseDown(e.touches[0], thumbMax);
+    });
+    
+    document.addEventListener('touchmove', (e) => {
+        if (isDragging) {
+            e.preventDefault();
+            handleMouseMove(e.touches[0]);
+        }
+    });
+    
+    document.addEventListener('touchend', handleMouseUp);
+    
+    // 初始化
+    updateSlider();
+</script>
+
+{% endblock %}

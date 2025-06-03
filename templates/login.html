@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}模擬登入{% endblock %}
+
+{% block content %}
+  <div class="text-center">
+    <h2 class="mb-4">請選擇模擬使用者登入</h2>
+    <form method="post" class="mx-auto" style="max-width: 400px;">
+      <div class="mb-3">
+        <input type="text" name="line_id" class="form-control" placeholder="模擬 LINE ID" required>
+      </div>
+      <div class="mb-3">
+        <input type="text" name="display_name" class="form-control" placeholder="顯示名稱（公開給其他人）" required>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">登入</button>
+    </form>
+  </div>
+{% endblock %}
