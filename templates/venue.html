@@ -190,26 +190,26 @@
             我要報名這個時段
           </h6>
           <form action="{{ url_for('book', timeslot_id=slot.id) }}" method="post">
-            <div class="row g-3">
-              <div class="col-md-3">
+            <div class="row g-2">
+              <div class="col-3 col-sm-3">
                 <label class="form-label">顯示名稱</label>
                 <input type="text" name="display_name" class="form-control" 
                        placeholder="請輸入您的名稱" required>
               </div>
-              <div class="col-md-2">
+              <div class="col-3 col-sm-3">
                 <label class="form-label">預約人數</label>
                 <input type="number" name="number" class="form-control" 
                        placeholder="人數" min="1" max="{{ slot.capacity - bookings[slot.id].total }}" required>
               </div>
-              <div class="col-md-5">
+              <div class="col-6 col-sm-4">
                 <label class="form-label">備註說明 <span class="text-muted small">(選填)</span></label>
                 <input type="text" name="note" class="form-control" 
                        placeholder="如有特殊需求或備註請填寫">
               </div>
-              <div class="col-md-2 d-flex align-items-end">
-                <button type="submit" class="btn btn-outline-success w-100">
-                  <i class="fas fa-check me-2"></i>
-                  確認報名
+              <div class="col-12 col-sm-2 d-flex justify-content-center justify-content-sm-end align-items-end">
+                <button type="submit" class="btn btn-outline-success">
+                  <i class="fas fa-check me-1"></i>
+                  報名
                 </button>
               </div>
             </div>
@@ -239,7 +239,7 @@
             {% for b in bookings[slot.id].records %}
             <div class="booking-item">
               <div class="row align-items-center">
-                <div class="col-md-8">
+                <div class="col-8 col-sm-7">
                   <div class="booking-info">
                     <div class="booking-name mb-2">
                       <i class="fas fa-user-circle me-2" style="color: var(--primary-color);"></i>
@@ -254,7 +254,7 @@
                     {% endif %}
                   </div>
                 </div>
-                <div class="col-md-4 text-end">
+                <div class="col-4 col-sm-5 text-end">
                   {% if current_user.is_authenticated and (
                         b.user_id == current_user.id or
                         current_user.permission == 'admin' or
@@ -264,7 +264,7 @@
                         style="display:inline;" 
                         onsubmit="return confirm('確定要取消這筆預約嗎？');">
                     <button type="submit" class="btn btn-sm btn-outline-danger">
-                      <i class="fas fa-times me-1"></i>取消預約
+                      <i class="fas fa-times me-1"></i>取消
                     </button>
                   </form>
                   {% endif %}
