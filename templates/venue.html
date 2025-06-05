@@ -29,7 +29,7 @@
 				</h5>
                 {% if venue.rules %}
                   <div class="rules-content">
-                    <p class="rules-text">{{ venue.rules }}</p>
+	            <p class="rules-text" style="white-space: pre-line;">{{ venue.rules }}</p>
                   </div>
                 {% else %}
                   <div class="text-center py-3">
@@ -46,7 +46,7 @@
 				</h5>
                 {% if venue.pricing %}
                   <div class="rules-content">
-                    <p class="rules-text">{{ venue.pricing }}</p>
+                    <p class="rules-text" style="white-space: pre-line;">{{ venue.pricing }}</p>
                   </div>
                 {% else %}
                   <div class="text-center py-3">
@@ -147,7 +147,7 @@
     <div class="card timeslot-card">
       <div class="card-header">
         <div class="row align-items-center">
-          <div class="col-md-6">
+          <div class="col-md-4">
             <div class="timeslot-info">
               <h5 class="mb-1">
                 <i class="fas fa-calendar-day"></i>
@@ -158,9 +158,13 @@
               </h5>
             </div>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-8">
             <div class="capacity-info">
               <div class="capacity-stats mb-2">
+                <span class="capacity-badge">
+                  <i class="fa-solid fa-star me-2"></i>
+                  {{ slot.level_min }} - {{ slot.level_max }} 級
+                </span>
                 <span class="capacity-badge">
                   <i class="fas fa-users me-2"></i>
                   已報名: {{ bookings[slot.id].total }} / 上限: {{ slot.capacity }} 人
@@ -205,7 +209,7 @@
               <div class="col-md-2 d-flex align-items-end">
                 <button type="submit" class="btn btn-outline-success w-100">
                   <i class="fas fa-check me-2"></i>
-                  確認報名
+                  報名
                 </button>
               </div>
             </div>
@@ -235,7 +239,7 @@
             {% for b in bookings[slot.id].records %}
             <div class="booking-item">
               <div class="row align-items-center">
-                <div class="col-md-8">
+                <div class="col-8 col-sm-7">
                   <div class="booking-info">
                     <div class="booking-name mb-2">
                       <i class="fas fa-user-circle me-2" style="color: var(--primary-color);"></i>
@@ -250,7 +254,7 @@
                     {% endif %}
                   </div>
                 </div>
-                <div class="col-md-4 text-end">
+                <div class="col-4 col-sm-5 text-end">
                   {% if current_user.is_authenticated and (
                         b.user_id == current_user.id or
                         current_user.permission == 'admin' or
@@ -260,7 +264,7 @@
                         style="display:inline;" 
                         onsubmit="return confirm('確定要取消這筆預約嗎？');">
                     <button type="submit" class="btn btn-sm btn-outline-danger">
-                      <i class="fas fa-times me-1"></i>取消預約
+                      <i class="fas fa-times me-1"></i>取消
                     </button>
                   </form>
                   {% endif %}
