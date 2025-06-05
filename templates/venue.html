@@ -190,25 +190,25 @@
             我要報名這個時段
           </h6>
           <form action="{{ url_for('book', timeslot_id=slot.id) }}" method="post">
-            <div class="row g-2">
-              <div class="col-3 col-sm-3">
+            <div class="row g-3">
+              <div class="col-md-3">
                 <label class="form-label">顯示名稱</label>
                 <input type="text" name="display_name" class="form-control" 
                        placeholder="請輸入您的名稱" required>
               </div>
-              <div class="col-3 col-sm-3">
+              <div class="col-md-2">
                 <label class="form-label">預約人數</label>
                 <input type="number" name="number" class="form-control" 
                        placeholder="人數" min="1" max="{{ slot.capacity - bookings[slot.id].total }}" required>
               </div>
-              <div class="col-6 col-sm-4">
+              <div class="col-md-5">
                 <label class="form-label">備註說明 <span class="text-muted small">(選填)</span></label>
                 <input type="text" name="note" class="form-control" 
                        placeholder="如有特殊需求或備註請填寫">
               </div>
-              <div class="col-12 col-sm-2 d-flex justify-content-center justify-content-sm-end align-items-end">
-                <button type="submit" class="btn btn-outline-success">
-                  <i class="fas fa-check me-1"></i>
+              <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-success w-100">
+                  <i class="fas fa-check me-2"></i>
                   報名
                 </button>
               </div>
