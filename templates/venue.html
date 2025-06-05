@@ -29,7 +29,7 @@
 				</h5>
                 {% if venue.rules %}
                   <div class="rules-content">
-                    <p class="rules-text">{{ venue.rules }}</p>
+	            <p class="rules-text" style="white-space: pre-line;">{{ venue.rules }}</p>
                   </div>
                 {% else %}
                   <div class="text-center py-3">
@@ -46,7 +46,7 @@
 				</h5>
                 {% if venue.pricing %}
                   <div class="rules-content">
-                    <p class="rules-text">{{ venue.pricing }}</p>
+                    <p class="rules-text" style="white-space: pre-line;">{{ venue.pricing }}</p>
                   </div>
                 {% else %}
                   <div class="text-center py-3">
@@ -147,7 +147,7 @@
     <div class="card timeslot-card">
       <div class="card-header">
         <div class="row align-items-center">
-          <div class="col-md-6">
+          <div class="col-md-4">
             <div class="timeslot-info">
               <h5 class="mb-1">
                 <i class="fas fa-calendar-day"></i>
@@ -158,9 +158,13 @@
               </h5>
             </div>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-8">
             <div class="capacity-info">
               <div class="capacity-stats mb-2">
+                <span class="capacity-badge">
+                  <i class="fa-solid fa-star me-2"></i>
+                  {{ slot.level_min }} - {{ slot.level_max }} 級
+                </span>
                 <span class="capacity-badge">
                   <i class="fas fa-users me-2"></i>
                   已報名: {{ bookings[slot.id].total }} / 上限: {{ slot.capacity }} 人
