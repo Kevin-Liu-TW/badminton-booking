@@ -1,34 +1,28 @@
+import os
+from dotenv import load_dotenv
+from config import config_map
+
+load_dotenv()
+app_env = os.environ.get("app_env", "development")
+app_config = config_map.get(app_env, config_map["development"])
+
 from flask import Flask, render_template, request, redirect, url_for, session, flash, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager, login_user, login_required, current_user, UserMixin, logout_user
 from datetime import datetime
 from models import db, User, Venue, Timeslot, Booking,venue_managers
-from dotenv import load_dotenv
-
-import os
-
-load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'default-secret')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config.from_object(app_config)
 
+app.secret_key = app.config["SECRET_KEY"]
 db.init_app(app)
 migrate = Migrate(app, db)
-
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'liff_login'  #====可試著移除
 login_manager.init_app(app)
-
-#======刪除==========
-@app.before_request
-def log_request_info():
-    print(f"📥 Request method: {request.method} URL: {request.url}")
-#===========================
-
 
 
 # -----------------------
@@ -36,7 +30,7 @@ def log_request_info():
 # -----------------------
 @app.context_processor
 def inject_liff_id():
-    return dict(LIFF_ID=os.environ.get("LIFF_ID", ""))
+    return dict(LIFF_ID=app.config.get("LIFF_ID", ""))
 
 # -----------------------
 # Login Manager
@@ -387,8 +381,11 @@ def update_permissions():
     flash("使用者權限已更新", "success")
     return redirect(url_for('admin_dashboard'))
 
-
-
+    
 if __name__ == "__main__":
-    import os
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    is_dev = app_env == "development"
+    app.run(
+        host="127.0.0.1" if is_dev else "0.0.0.0",
+        port=app.config["PORT"],
+        debug=app_config.DEBUG
+    )
