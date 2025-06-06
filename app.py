@@ -25,13 +25,6 @@ login_manager.login_view = 'liff_login'  #====可試著移除
 login_manager.init_app(app)
 
 
-# 測試用
-@app.route("/ping")
-def ping():
-    return f"pong - env: {os.environ.get('app_env', 'production')}"
-
-
-
 # -----------------------
 # Get liff id
 # -----------------------
@@ -387,11 +380,7 @@ def update_permissions():
     db.session.commit()
     flash("使用者權限已更新", "success")
     return redirect(url_for('admin_dashboard'))
-#測試用
-@app.errorhandler(Exception)
-def handle_exception(e):
-    import traceback
-    return f"<pre>{traceback.format_exc()}</pre>", 500
+
     
 if __name__ == "__main__":
     is_dev = app_env == "development"
