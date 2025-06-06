@@ -28,7 +28,7 @@ login_manager.init_app(app)
 # 測試用
 @app.route("/ping")
 def ping():
-    return "pong"
+    return f"pong - env: {os.environ.get('app_env', 'production')}"
 
 
 
