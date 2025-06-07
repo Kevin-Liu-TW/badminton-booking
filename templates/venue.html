@@ -3,7 +3,8 @@
 {% block title %}{{ venue.name }} - 羽球零打預約{% endblock %}
 
 {% block content %}
-
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <!-- Venue Header -->
 <div class="row mb-4">
   <div class="col-12">
@@ -131,7 +132,6 @@
 </div>
 
 <!-- Timeslots Section -->
-{% if timeslots %}
 <div class="row mb-4">
   <div class="col-12">
     <h3 class="text-center mb-4">
@@ -141,6 +141,41 @@
   </div>
 </div>
 
+<form method="get" action="{{ url_for('venue', venue_id=venue.id) }}" class="row mb-4 justify-content-center g-1">
+  <div class="col-md-3 form-floating">
+    <input type="text" id="date" name="date" class="form-control"
+           value="{{ request.args.get('date', '') }}">
+    <label for="date">日期</label>
+  </div>
+
+  <div class="col-md-2 form-floating">
+    <select name="time" id="time" class="form-select">
+      <option value="" {% if not request.args.get('time') %}selected{% endif %}>不分時段</option>
+      <option value="morning" {% if request.args.get('time') == 'morning' %}selected{% endif %}>上午</option>
+      <option value="afternoon" {% if request.args.get('time') == 'afternoon' %}selected{% endif %}>下午</option>
+    </select>
+    <label for="time">時段</label>
+  </div>
+
+  <div class="col-md-2 form-floating">
+    <select name="level" id="level" class="form-select">
+      <option value="" {% if not request.args.get('level') %}selected{% endif %}>不分程度</option>
+      {% for lv in range(1, 19) %}
+        <option value="{{ lv }}" {% if request.args.get('level') == lv|string %}selected{% endif %}>{{ lv }} 級</option>
+      {% endfor %}
+    </select>
+    <label for="level">程度</label>
+  </div>
+
+  <div class="col-md-2 d-grid">
+    <button type="submit" class="btn btn-primary">篩選</button>
+  </div>
+  <div class="col-md-2 d-grid">
+    <a href="{{ url_for('venue', venue_id=venue.id) }}" class="btn btn-primary">清除</a>
+  </div>
+</form>
+
+{% if timeslots %}
 {% for slot in timeslots %}
 <div class="row mb-4">
   <div class="col-12">
@@ -170,12 +205,20 @@
                   已報名: {{ bookings[slot.id].total }} / 上限: {{ slot.capacity }} 人
                 </span>
               </div>
-              <div class="progress" style="height: 8px; border-radius: 4px;">
-                <div class="progress-bar" 
-                     style="width: {{ (bookings[slot.id].total / slot.capacity * 100) if slot.capacity > 0 else 0 }}%; 
-                            background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));">
-                </div>
-              </div>
+              {% set percentage = (bookings[slot.id].total / slot.capacity * 100) if slot.capacity > 0 else 0 %}
+              <div class="progress" style="height: 12px; border-radius: 6px; background-color: #e9ecef; border: 2px solid #dee2e6;">
+                  <div class="progress-bar" 
+                       style="width: {{ percentage }}%; 
+                              {% if percentage == 100 %}
+                                  background-color: #d71259;
+                              {% elif percentage > 70 %}
+                                  background-color: #ffbb42;
+                              {% else %}
+                                  background-color: #03c39a;
+                              {% endif %}
+                              transition: width 0.3s ease, background-color 0.3s ease;">
+                  </div>
+              </div>			  
             </div>
           </div>
         </div>
@@ -306,6 +349,15 @@
   </div>
 </div>
 {% endif %}
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    flatpickr("#date", {
+      dateFormat: "Y-m-d",
+      allowInput: true
+    });
+  });
+</script>
 
 <style>
 .text-gradient {
