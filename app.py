@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from config import config_map
 
 load_dotenv()
-app_env = os.environ.get("app_env", "development")
+app_env = os.environ.get("FLASK_ENV", "development")
 app_config = config_map.get(app_env, config_map["development"])
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, abort
@@ -23,6 +23,7 @@ migrate = Migrate(app, db)
 login_manager = LoginManager(app)
 login_manager.login_view = 'liff_login'  #====可試著移除
 login_manager.init_app(app)
+
 
 
 # -----------------------
@@ -100,22 +101,44 @@ def logout():
 @login_required
 def venue(venue_id):
     venue = Venue.query.get_or_404(venue_id)
-    
-    # 獲取今天或 session 中選擇的日期，並過濾時段
-    selected_date_str = session.get('selected_date', datetime.now().strftime('%Y-%m-%d'))
-    
-    # 根據選定的日期和場地 ID 獲取時段
-    timeslots = Timeslot.query.filter(Timeslot.venue_id == venue_id, Timeslot.date >= selected_date_str).order_by(Timeslot.date, Timeslot.start_time).all()
-    
-    # 建立每個時段的報名資料字典
+
+    filter_date = request.args.get("date")
+    filter_time = request.args.get("time")
+    filter_level = request.args.get("level", type=int)
+
+    today_str = datetime.now().strftime('%Y-%m-%d')
+
+    if filter_date:
+        session['selected_date'] = filter_date
+        selected_date_str = filter_date
+    else:
+        session.pop('selected_date', None)  # ✅ 清除 session 中的舊值
+        selected_date_str = today_str
+
+    query = Timeslot.query.filter(Timeslot.venue_id == venue.id)
+
+    if not filter_date and not filter_time and not filter_level:
+        query = query.filter(Timeslot.date >= today_str)
+
+    if filter_date:
+        query = query.filter(Timeslot.date == filter_date)
+    elif selected_date_str:
+        query = query.filter(Timeslot.date >= selected_date_str)
+    if filter_time == "morning":
+        query = query.filter(Timeslot.start_time < "12:00")
+    elif filter_time == "afternoon":
+        query = query.filter(Timeslot.start_time >= "12:00")
+    if filter_level:
+        query = query.filter(Timeslot.level_min <= filter_level, Timeslot.level_max >= filter_level)
+
+    timeslots = query.order_by(Timeslot.date.asc(), Timeslot.start_time.asc()).all()
+
     bookings = {}
-    
     for slot in timeslots:
         records = Booking.query.filter_by(timeslot_id=slot.id).all()
         total = sum(b.number_of_people for b in records)
         bookings[slot.id] = {"records": records, "total": total}
 
-    # ✅ 取得此場地的 manager user_id 清單
     venue_managers = [user.id for user in venue.managers]
 
     return render_template("venue.html",
@@ -381,7 +404,6 @@ def update_permissions():
     flash("使用者權限已更新", "success")
     return redirect(url_for('admin_dashboard'))
 
-    
 if __name__ == "__main__":
     is_dev = app_env == "development"
     app.run(
