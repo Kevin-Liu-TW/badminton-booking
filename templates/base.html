@@ -9,7 +9,7 @@
 	<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 	
-    <script> const LIFF_ID = '2007469894-DewXOwNg';; // <-- 替換為您的 LIFF ID </script>
+    <script> const LIFF_ID = {{ LIFF_ID | tojson | safe }};; // <-- Liff ID from config </script>
 	
     <style>
         :root {
@@ -424,7 +424,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const LIFF_ID = '2007469894-DewXOwNg'; // 你的 LIFF ID
+        const LIFF_ID = {{ LIFF_ID | tojson | safe }}; // 你的 LIFF ID
         liff.init({ liffId: LIFF_ID })
             .then(() => {
                 if (!liff.isLoggedIn()) { // 使用者未登入 LINE
