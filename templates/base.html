@@ -497,7 +497,9 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+
         const LIFF_ID = {{ LIFF_ID | tojson | safe }}; // LIFF ID for config
+
         liff.init({ liffId: LIFF_ID })
             .then(() => {
                 if (!liff.isLoggedIn()) { // 使用者未登入 LINE

@@ -3,8 +3,10 @@ from dotenv import load_dotenv
 from config import config_map
 
 load_dotenv()
+
 app_env = os.environ.get("app_env", "development")
 app_config = config_map.get(app_env, config_map["development"])
+
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, abort, jsonify  
 from flask_sqlalchemy import SQLAlchemy
