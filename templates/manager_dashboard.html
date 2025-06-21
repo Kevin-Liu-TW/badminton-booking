@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}場地管理員後台{% endblock %}
+{% block title %}場地管理{% endblock %}
 
 {% block content %}
 
@@ -21,327 +21,404 @@
           </div>
         </div>
         
-        <div class="card-body">
-          <!-- 時段管理區 -->
-          <div class="management-section">
-            <h5 class="section-title mb-4">
-              <i class="fas fa-calendar-alt me-2" style="color: var(--primary-color);"></i>
-              報名時段管理
-            </h5>
-
-
-            <!-- 現有時段列表 -->
-            {% if venue.timeslots %}
-            <div class="existing-timeslots mb-4">
-              <h6 class="fw-semibold mb-3">
-                <i class="fas fa-list me-2"></i>
-                目前開放時段
-              </h6>
-              <div class="timeslots-grid">
-                {% for slot in venue.timeslots %}
-                <div class="timeslot-item">
-                  <div class="timeslot-info">
-                    <div class="timeslot-date">
-                      <i class="fas fa-calendar-day me-2"></i>
-                      {{ slot.date }}
-                    </div>
-                    <div class="timeslot-time">
-                      <i class="fas fa-clock me-2"></i>
-                      {{ slot.start_time[:5] }} - {{ slot.end_time[:5] }}
-                    </div>
-                    <div class="timeslot-capacity">
-                      <i class="fas fa-users me-1"></i>
-                    報名狀況 {{ slot.bookings | sum(attribute='number_of_people') }} / {{ slot.capacity }} 人
-                    </div>
-                    <div class="timeslot-time">
-                      <i class="fa-solid fa-star me-2"></i>
-                     {{ slot.level_min }} - {{ slot.level_max }} 級
-                    </div>
-                  </div>
-                  <div class="timeslot-actions">
-                    <form method="POST" action="{{ url_for('delete_timeslot', timeslot_id=slot.id) }}" 
-                          style="display:inline;" 
-                          onsubmit="return confirm('確定要刪除這個時段？相關預約紀錄也會一併刪除。')">
-                      <button type="submit" class="btn btn-sm btn-outline-danger">
-                        <i class="fas fa-trash-alt me-1"></i>刪除
-                      </button>
-                    </form>
-                  </div>
-                </div>
-                {% endfor %}
-              </div>
-            </div>
-            {% else %}
-            <div class="empty-timeslots mb-4">
-              <div class="text-center py-4">
-                <i class="fas fa-calendar-times text-muted mb-3" style="font-size: 2.5rem;"></i>
-                <h6 class="text-muted mb-2">尚無開放時段</h6>
-                <p class="text-muted small mb-0">請新增時段讓使用者可以進行預約</p>
-              </div>
-            </div>
-            {% endif %}
-
-            <!-- 新增時段表單 -->
-            <div class="add-timeslot-section">
-              <h6 class="fw-semibold mb-3">
-                <i class="fas fa-plus-circle me-2" style="color: var(--primary-color);"></i>
-                新增時段
-              </h6>
-              <form action="{{ url_for('add_timeslot', venue_id=venue.id) }}" method="POST">
-                <div class="row g-3">
-                  <div class="col-md-3">
-                    <label class="form-label">日期</label>
-                    <input type="date" name="date" class="form-control" required>
-                  </div>
-                  <div class="col-md-2">
-                    <label class="form-label">開始時間</label>
-                    <input type="time" name="start_time" class="form-control" required>
-                  </div>
-                  <div class="col-md-2">
-                    <label class="form-label">結束時間</label>
-                    <input type="time" name="end_time" class="form-control" required>
-                  </div>
-                  <div class="col-md-3">
-                    <label class="form-label">人數上限</label>
-                    <input type="number" name="capacity" class="form-control" min="1" placeholder="例如: 8" required>
-                  </div>
-                  <div class="col-md-2">
-                      <label class="form-label">程度範圍</label>
-                      <div class="range-slider-container">
-                          <div class="single-dual-range">
-                              <div class="slider-track"></div>
-                              <div class="slider-range" id="sliderRange"></div>
-                              <div class="thumb thumb-min" id="thumbMin"></div>
-                              <div class="thumb thumb-max" id="thumbMax"></div>
-                          </div>
-                          <div class="range-values">
-                              <span>1</span>
-                              <span>18</span>
-                          </div>
-                          <div class="selected-range" id="rangeDisplay">範圍: 1 - 18</div>
+		<!-- 分頁資訊 -->
+        <ul class="nav nav-tabs mb-4" id="venueTab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="rules-manage-{{ venue.id }}" data-bs-toggle="tab" data-bs-target="#rules-pane-{{ venue.id }}" type="button" role="tab">資訊管理</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="booking-manage-{{ venue.id }}" data-bs-toggle="tab" data-bs-target="#booking-pane-{{ venue.id }}" type="button" role="tab">零打管理</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="rent-manage-{{ venue.id }}" data-bs-toggle="tab" data-bs-target="#rent-pane-{{ venue.id }}" type="button" role="tab">場租管理</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="record-manage-{{ venue.id }}" data-bs-toggle="tab" data-bs-target="#record-pane-{{ venue.id }}" type="button" role="tab">統計資料</button>
+          </li>
+        </ul>
+		
+        <div class="tab-content" id="venueTabContent">
+          <!-- First tab -->
+          <div class="tab-pane fade" id="rules-pane-{{ venue.id }}" role="tabpanel">
+		  
+            <!-- 場地資訊管理區 -->
+            <div class="card venue-info-card mb-4">
+              <div class="card-body">			
+                <form method="POST" action="{{ url_for('update_venue_rules', venue_id=venue.id) }}">
+                  <!-- 基本資訊區塊 -->
+                  <div class="info-block mb-4">
+                    <h6 class="block-title">
+                      <i class="fas fa-map-marker-alt me-2"></i>基本資訊
+                    </h6>
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <label class="form-label">聯絡電話</label>
+                        <input type="tel" name="phone" class="form-control" 
+                               value="{{ venue.phone or '' }}" placeholder="例如: 02-12345678">
                       </div>
-                      <!-- 隱藏的輸入欄位，用於表單提交 -->
-                      <input type="hidden" name="level_min" id="levelMinValue" value="1">
-                      <input type="hidden" name="level_max" id="levelMaxValue" value="18">
-                  </div>			  
-                  <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-outline-success">
-                      <i class="fas fa-plus me-2"></i>新增
+                      <div class="col-md-6">
+                        <label class="form-label">縣市</label>
+                        <select name="city" class="form-select">
+                          <option value="">請選擇縣市</option>
+                          <option value="台北市" {{ 'selected' if venue.city == '台北市' }}>台北市</option>
+                          <option value="新北市" {{ 'selected' if venue.city == '新北市' }}>新北市</option>
+                          <option value="桃園市" {{ 'selected' if venue.city == '桃園市' }}>桃園市</option>
+                          <option value="基隆市" {{ 'selected' if venue.city == '基隆市' }}>基隆市</option>
+                          <option value="新竹市" {{ 'selected' if venue.city == '新竹市' }}>新竹市</option>
+                          <option value="新竹縣" {{ 'selected' if venue.city == '新竹縣' }}>新竹縣</option>
+                        </select>
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label">詳細地址</label>
+                        <input type="text" name="address" class="form-control" 
+                               value="{{ venue.address or '' }}" placeholder="請輸入詳細地址">
+                      </div>
+                      <div class="col-4">
+                        <label class="form-label">營業開始時間</label>
+                        <input type="time" name="openHour" class="form-control" value="{{ venue.openHour.strftime('%H:%M') if venue.openHour else '' }}">
+                      </div>
+                      <div class="col-4">
+                        <label class="form-label">營業結束時間</label>
+                        <input type="time" name="closeHour" class="form-control" value="{{ venue.closeHour.strftime('%H:%M') if venue.closeHour else '' }}">
+                      </div>
+                      <div class="col-4">
+                        <label class="form-label">球場面數</label>
+                        <input type="number" name="position" class="form-control" min="1" value="{{ venue.position or '' }}">
+                      </div>
+                    </div>
+                  </div>
+
+
+                  <!-- 設施區塊 - 修正版本 -->
+                  <div class="info-block mb-4">
+                    <h6 class="block-title">
+                      <i class="fas fa-building me-2"></i>場地設施
+                    </h6>
+                    <div class="row g-2">
+                      <div class="col-md-3 col-6">
+                        <div class="form-check facility-check">
+                          <input class="form-check-input" type="checkbox" name="facilities" value="冷氣"
+                                 id="ac_{{ venue.id }}" 
+                                 {% if venue.facilities and '冷氣' in venue.facilities.split(',') %}checked{% endif %}>
+                          <label class="form-check-label" for="ac_{{ venue.id }}">
+                            <i class="fas fa-snowflake me-2"></i>冷氣
+                          </label>
+                        </div>
+                      </div>
+                      <div class="col-md-3 col-6">
+                        <div class="form-check facility-check">
+                          <input class="form-check-input" type="checkbox" name="facilities" value="廁所"
+                                 id="toilet_{{ venue.id }}" 
+                                 {% if venue.facilities and '廁所' in venue.facilities.split(',') %}checked{% endif %}>
+                          <label class="form-check-label" for="toilet_{{ venue.id }}">
+                            <i class="fas fa-restroom me-2"></i>廁所
+                          </label>
+                        </div>
+                      </div>
+                      <div class="col-md-3 col-6">
+                        <div class="form-check facility-check">
+                          <input class="form-check-input" type="checkbox" name="facilities" value="淋浴間"
+                                 id="shower_{{ venue.id }}" 
+                                 {% if venue.facilities and '淋浴間' in venue.facilities.split(',') %}checked{% endif %}>
+                          <label class="form-check-label" for="shower_{{ venue.id }}">
+                            <i class="fas fa-shower me-2"></i>淋浴間
+                          </label>
+                        </div>
+                      </div>
+                      <div class="col-md-3 col-6">
+                        <div class="form-check facility-check">
+                          <input class="form-check-input" type="checkbox" name="facilities" value="停車場"
+                                 id="parking_{{ venue.id }}" 
+                                 {% if venue.facilities and '停車場' in venue.facilities.split(',') %}checked{% endif %}>
+                          <label class="form-check-label" for="parking_{{ venue.id }}">
+                            <i class="fas fa-parking me-2"></i>停車場
+                          </label>
+                        </div>
+                      </div>
+                      <div class="col-md-3 col-6">
+                        <div class="form-check facility-check">
+                          <input class="form-check-input" type="checkbox" name="facilities" value="飲水機"
+                                 id="water_{{ venue.id }}" 
+                                 {% if venue.facilities and '飲水機' in venue.facilities.split(',') %}checked{% endif %}>
+                          <label class="form-check-label" for="water_{{ venue.id }}">
+                            <i class="fas fa-tint me-2"></i>飲水機
+                          </label>
+                        </div>
+                      </div>
+                      <div class="col-md-3 col-6">
+                        <div class="form-check facility-check">
+                          <input class="form-check-input" type="checkbox" name="facilities" value="更衣室"
+                                 id="locker_{{ venue.id }}" 
+                                 {% if venue.facilities and '更衣室' in venue.facilities.split(',') %}checked{% endif %}>
+                          <label class="form-check-label" for="locker_{{ venue.id }}">
+                            <i class="fas fa-door-open me-2"></i>更衣室
+                          </label>
+                        </div>
+                      </div>
+                      <div class="col-md-3 col-6">
+                        <div class="form-check facility-check">
+                          <input class="form-check-input" type="checkbox" name="facilities" value="器材租借"
+                                 id="equipment_{{ venue.id }}" 
+                                 {% if venue.facilities and '器材租借' in venue.facilities.split(',') %}checked{% endif %}>
+                          <label class="form-check-label" for="equipment_{{ venue.id }}">
+                            <i class="fas fa-tools me-2"></i>器材租借
+                          </label>
+                        </div>
+                      </div>
+                      <div class="col-md-3 col-6">
+                        <div class="form-check facility-check">
+                          <input class="form-check-input" type="checkbox" name="facilities" value="Wi-Fi"
+                                 id="wifi_{{ venue.id }}" 
+                                 {% if venue.facilities and 'Wi-Fi' in venue.facilities.split(',') %}checked{% endif %}>
+                          <label class="form-check-label" for="wifi_{{ venue.id }}">
+                            <i class="fas fa-wifi me-2"></i>Wi-Fi
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+			  
+                  <!-- 收費規則區塊 -->
+                  <div class="info-block mb-4">
+                    <h6 class="block-title">
+                      <i class="fas fa-dollar-sign me-2"></i>收費規則
+                    </h6>
+                    <textarea name="pricing" class="form-control" rows="4" 
+                              placeholder="請輸入收費標準，例如：&#10;平日：每小時 200 元&#10;假日：每小時 250 元">{{ venue.pricing or '' }}</textarea>
+                  </div>
+		      
+                  <!-- 使用規則區塊 -->
+                  <div class="info-block mb-4">
+                    <h6 class="block-title">
+                      <i class="fas fa-clipboard-list me-2"></i>使用規則
+                    </h6>
+                    <textarea name="rules" class="form-control" rows="4" 
+                              placeholder="請輸入場地使用規則，讓使用者了解注意事項...">{{ venue.rules or '' }}</textarea>
+                  </div>
+		      
+                  <div class="text-center">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                      <i class="fas fa-save me-2"></i>更新場地資訊
                     </button>
                   </div>
-                </div>
-              </form>
-            </div>
-          </div>
-
-          <!-- 卡片底部統計 -->
-          <div class="card-footer">
-            <div class="row text-center">
-              <div class="col-md-4">
-                <div class="stat-item">
-                  <i class="fas fa-calendar-check text-primary mb-2"></i>
-                  <div class="stat-number">{{ venue.timeslots|length }}</div>
-                  <div class="stat-label">開放時段</div>
-                </div>
+                </form>
               </div>
-              <div class="col-md-4">
-                <div class="stat-item">
-                  <i class="fas fa-users text-success mb-2"></i>
-                  <div class="stat-number">
-                    {% set total_bookings = [] %}
+			</div>
+		  </div>
+		  
+          <!-- Second tab -->
+          <div class="tab-pane fade show active" id="booking-pane-{{ venue.id }}" role="tabpanel">	
+            <!-- 時段管理區 -->
+            <div class="card-body">
+              <div class="management-section">	    
+                <!-- 現有時段列表 -->
+                {% if venue.timeslots %}
+                <div class="existing-timeslots mb-4">
+                  <h6 class="fw-semibold mb-3">
+                    <i class="fas fa-list me-2"></i>
+                    目前開放時段
+                  </h6>
+                  <div class="timeslots-grid">
                     {% for slot in venue.timeslots %}
-                      {% set _ = total_bookings.extend(slot.bookings) %}
+                    <div class="timeslot-item">
+                      <div class="timeslot-info">
+                        <div class="timeslot-date">
+                          <i class="fas fa-calendar-day me-2"></i>
+                          {{ slot.date }}
+                        </div>
+                        <div class="timeslot-time">
+                          <i class="fas fa-clock me-2"></i>
+                          {{ slot.start_time[:5] }} - {{ slot.end_time[:5] }}
+                        </div>
+                        <div class="timeslot-capacity">
+                          <i class="fas fa-users me-1"></i>
+                        報名狀況 {{ slot.bookings | sum(attribute='number_of_people') }} / {{ slot.capacity }} 人
+                        </div>
+                        <div class="timeslot-time">
+                          <i class="fa-solid fa-star me-2"></i>
+                         {{ slot.level_min }} - {{ slot.level_max }} 級
+                        </div>
+                      </div>
+                      <div class="timeslot-actions">
+                        <form method="POST" action="{{ url_for('delete_timeslot', timeslot_id=slot.id) }}" 
+                              style="display:inline;" 
+                              onsubmit="return confirm('確定要刪除這個時段？相關預約紀錄也會一併刪除。')">
+                          <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-trash-alt me-1"></i>刪除
+                          </button>
+                        </form>
+                      </div>
+                    </div>
                     {% endfor %}
-                    {{ total_bookings|length }}
                   </div>
-                  <div class="stat-label">預約人次</div>
                 </div>
-              </div>
-              <div class="col-md-4">
-                <div class="stat-item">
-                  <i class="fas fa-chart-line text-warning mb-2"></i>
-                  <div class="stat-number">
-                    {% if venue.timeslots %}
-                      {% set total_capacity = venue.timeslots|sum(attribute='capacity') %}
-                      {% set total_booked = total_bookings|sum(attribute='number_of_people') %}
-                      {{ ((total_booked / total_capacity * 100) if total_capacity > 0 else 0)|round|int }}%
-                    {% else %}
-                      0%
-                    {% endif %}
+                {% else %}
+                <div class="empty-timeslots mb-4">
+                  <div class="text-center py-4">
+                    <i class="fas fa-calendar-times text-muted mb-3" style="font-size: 2.5rem;"></i>
+                    <h6 class="text-muted mb-2">尚無開放時段</h6>
+                    <p class="text-muted small mb-0">請新增時段讓使用者可以進行預約</p>
                   </div>
-                  <div class="stat-label">預約率</div>
+                </div>
+                {% endif %}
+	    
+                <!-- 新增時段表單 -->
+                <div class="add-timeslot-section">
+                  <h6 class="fw-semibold mb-3">
+                    <i class="fas fa-plus-circle me-2" style="color: var(--primary-color);"></i>
+                    新增時段
+                  </h6>
+                  <form action="{{ url_for('add_timeslot', venue_id=venue.id) }}" method="POST">
+                    <div class="row g-3">
+                      <div class="col-md-3">
+                        <label class="form-label">日期</label>
+                        <input type="date" name="date" class="form-control" required>
+                      </div>
+                      <div class="col-md-2"> 
+                        <label class="form-label">開始時間</label>
+                        <input type="time" name="start_time" class="form-control" step="1800" required>
+                      </div>
+                      <div class="col-md-2">
+                        <label class="form-label">結束時間</label>
+                        <input type="time" name="end_time" class="form-control" step="1800" required>
+                      </div>
+                      <div class="col-md-3">
+                        <label class="form-label">人數上限</label>
+                        <input type="number" name="capacity" class="form-control" min="1" placeholder="例如: 8" required>
+                      </div>
+                      <div class="col-md-2">
+                          <label class="form-label">程度範圍</label>
+                          <div class="range-slider-container">
+                              <div class="single-dual-range">
+                                  <div class="slider-track"></div>
+                                  <div class="slider-range" id="sliderRange"></div>
+                                  <div class="thumb thumb-min" id="thumbMin"></div>
+                                  <div class="thumb thumb-max" id="thumbMax"></div>
+                              </div>
+                              <div class="range-values">
+                                  <span>1</span>
+                                  <span>18</span>
+                              </div>
+                              <div class="selected-range" id="rangeDisplay">範圍: 1 - 18</div>
+                          </div>
+                          <!-- 隱藏的輸入欄位，用於表單提交 -->
+                          <input type="hidden" name="level_min" id="levelMinValue" value="1">
+                          <input type="hidden" name="level_max" id="levelMaxValue" value="18">
+                      </div>			  
+                      <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-outline-success">
+                          <i class="fas fa-plus me-2"></i>新增
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>			
+            </div>
+		  </div>
+		  
+		  <!-- Third tab -->
+          <div class="tab-pane fade" id="rent-pane-{{ venue.id }}" role="tabpanel">
+		  
+		  
+		  
+            <div class="card">
+			<!-- 待確認清單 -->
+              <div class="card-body">
+                <div class="row align-items-center mb-3">
+                  <div class="col-6">
+                    <span style="font-size: 1.4rem; font-weight: bold;">待確認清單</span>
+                  </div>
+                  <div class="col-6 d-flex justify-content-end gap-2">
+                    <button class="btn btn-success btn-sm" onclick="batchUpdateStatus('booked')">批次確認</button>
+                    <button class="btn btn-danger btn-sm" onclick="batchUpdateStatus('cancelled')">批次取消</button>
+                  </div>
+                </div>
+                <div id="pending-list" class="booking-list"></div>
+                <nav><ul class="pagination" id="pending-pagination"></ul></nav>
+              </div>
+			  
+			  <!-- 已確認清單 -->
+			  <div class="card-body">
+                <div class="row align-items-center mb-3">
+				
+                  <div class="col-6 d-flex align-items-center">
+                    <span style="font-size: 1.4rem; font-weight: bold; margin-right: 1rem;">已確認清單</span>
+                    
+                    <div class="d-flex align-items-center gap-3">
+                      <div class="d-flex align-items-center me-2">
+                        <span style="display: inline-block; width: 16px; height: 16px; background-color: #99E79E; border-radius: 4px; margin-right: 5px;"></span>
+                        <small>已確認</small>
+                      </div>
+                      <div class="d-flex align-items-center">
+                        <span style="display: inline-block; width: 16px; height: 16px; background-color: #EF9A9A; border-radius: 4px; margin-right: 5px;"></span>
+                        <small>已取消</small>
+                      </div>
+                    </div>
+                  </div>
+				  
+                  <div class="col-6 d-flex justify-content-end gap-2">
+                    <button class="btn btn-danger btn-sm" onclick="batchUpdateStatus('cancelled')">批次取消</button>					
+                  </div>
+                </div>
+                <div id="confirmed-list" class="booking-list"></div>
+                <nav><ul class="pagination" id="confirmed-pagination"></ul></nav>	
+              </div>
+			  
+            </div>
+          </div>
+		  
+		  <!-- Fourth tab -->
+          <div class="tab-pane fade" id="record-pane-{{ venue.id }}" role="tabpanel">
+	        <div class="card">
+              <div class="card-body">
+                <!-- 卡片底部統計 -->
+                <div class="card-footer">
+                  <div class="row text-center">
+                    <div class="col-md-4">
+                      <div class="stat-item">
+                        <i class="fas fa-calendar-check text-primary mb-2"></i>
+                        <div class="stat-number">{{ venue.timeslots|length }}</div>
+                        <div class="stat-label">開放時段</div>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="stat-item">
+                        <i class="fas fa-users text-success mb-2"></i>
+                        <div class="stat-number">
+                          {% set total_bookings = [] %}
+                          {% for slot in venue.timeslots %}
+                            {% set _ = total_bookings.extend(slot.bookings) %}
+                          {% endfor %}
+                          {{ total_bookings|length }}
+                        </div>
+                        <div class="stat-label">預約人次</div>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="stat-item">
+                        <i class="fas fa-chart-line text-warning mb-2"></i>
+                        <div class="stat-number">
+                          {% if venue.timeslots %}
+                            {% set total_capacity = venue.timeslots|sum(attribute='capacity') %}
+                            {% set total_booked = total_bookings|sum(attribute='number_of_people') %}
+                            {{ ((total_booked / total_capacity * 100) if total_capacity > 0 else 0)|round|int }}%
+                          {% else %}
+                            0%
+                          {% endif %}
+                        </div>
+                        <div class="stat-label">預約率</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-
-		  <hr class="section-divider">
-
-          <!-- 場地資訊管理區 -->
-          <div class="management-section mb-4">
-            <h5 class="section-title">
-              <i class="fas fa-info-circle me-2" style="color: var(--primary-color);"></i>
-              場地資訊管理
-            </h5>
-            
-            <form method="POST" action="{{ url_for('update_venue_rules', venue_id=venue.id) }}">
-              <!-- 基本資訊區塊 -->
-              <div class="info-block mb-4">
-                <h6 class="block-title">
-                  <i class="fas fa-map-marker-alt me-2"></i>基本資訊
-                </h6>
-                <div class="row g-3">
-                  <div class="col-md-6">
-                    <label class="form-label">聯絡電話</label>
-                    <input type="tel" name="phone" class="form-control" 
-                           value="{{ venue.phone or '' }}" placeholder="例如: 02-12345678">
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label">縣市</label>
-                    <select name="city" class="form-select">
-                      <option value="">請選擇縣市</option>
-                      <option value="台北市" {{ 'selected' if venue.city == '台北市' }}>台北市</option>
-                      <option value="新北市" {{ 'selected' if venue.city == '新北市' }}>新北市</option>
-                      <option value="桃園市" {{ 'selected' if venue.city == '桃園市' }}>桃園市</option>
-                      <option value="基隆市" {{ 'selected' if venue.city == '基隆市' }}>基隆市</option>
-                      <option value="新竹市" {{ 'selected' if venue.city == '新竹市' }}>新竹市</option>
-                      <option value="新竹縣" {{ 'selected' if venue.city == '新竹縣' }}>新竹縣</option>
-                    </select>
-                  </div>
-                  <div class="col-12">
-                    <label class="form-label">詳細地址</label>
-                    <input type="text" name="address" class="form-control" 
-                           value="{{ venue.address or '' }}" placeholder="請輸入詳細地址">
-                  </div>
-                </div>
-              </div>
-
-              <!-- 設施區塊 - 修正版本 -->
-              <div class="info-block mb-4">
-                <h6 class="block-title">
-                  <i class="fas fa-building me-2"></i>場地設施
-                </h6>
-                <div class="row g-2">
-                  <div class="col-md-3 col-6">
-                    <div class="form-check facility-check">
-                      <input class="form-check-input" type="checkbox" name="facilities" value="冷氣"
-                             id="ac_{{ venue.id }}" 
-                             {% if venue.facilities and '冷氣' in venue.facilities.split(',') %}checked{% endif %}>
-                      <label class="form-check-label" for="ac_{{ venue.id }}">
-                        <i class="fas fa-snowflake me-2"></i>冷氣
-                      </label>
-                    </div>
-                  </div>
-                  <div class="col-md-3 col-6">
-                    <div class="form-check facility-check">
-                      <input class="form-check-input" type="checkbox" name="facilities" value="廁所"
-                             id="toilet_{{ venue.id }}" 
-                             {% if venue.facilities and '廁所' in venue.facilities.split(',') %}checked{% endif %}>
-                      <label class="form-check-label" for="toilet_{{ venue.id }}">
-                        <i class="fas fa-restroom me-2"></i>廁所
-                      </label>
-                    </div>
-                  </div>
-                  <div class="col-md-3 col-6">
-                    <div class="form-check facility-check">
-                      <input class="form-check-input" type="checkbox" name="facilities" value="淋浴間"
-                             id="shower_{{ venue.id }}" 
-                             {% if venue.facilities and '淋浴間' in venue.facilities.split(',') %}checked{% endif %}>
-                      <label class="form-check-label" for="shower_{{ venue.id }}">
-                        <i class="fas fa-shower me-2"></i>淋浴間
-                      </label>
-                    </div>
-                  </div>
-                  <div class="col-md-3 col-6">
-                    <div class="form-check facility-check">
-                      <input class="form-check-input" type="checkbox" name="facilities" value="停車場"
-                             id="parking_{{ venue.id }}" 
-                             {% if venue.facilities and '停車場' in venue.facilities.split(',') %}checked{% endif %}>
-                      <label class="form-check-label" for="parking_{{ venue.id }}">
-                        <i class="fas fa-parking me-2"></i>停車場
-                      </label>
-                    </div>
-                  </div>
-                  <div class="col-md-3 col-6">
-                    <div class="form-check facility-check">
-                      <input class="form-check-input" type="checkbox" name="facilities" value="飲水機"
-                             id="water_{{ venue.id }}" 
-                             {% if venue.facilities and '飲水機' in venue.facilities.split(',') %}checked{% endif %}>
-                      <label class="form-check-label" for="water_{{ venue.id }}">
-                        <i class="fas fa-tint me-2"></i>飲水機
-                      </label>
-                    </div>
-                  </div>
-                  <div class="col-md-3 col-6">
-                    <div class="form-check facility-check">
-                      <input class="form-check-input" type="checkbox" name="facilities" value="更衣室"
-                             id="locker_{{ venue.id }}" 
-                             {% if venue.facilities and '更衣室' in venue.facilities.split(',') %}checked{% endif %}>
-                      <label class="form-check-label" for="locker_{{ venue.id }}">
-                        <i class="fas fa-door-open me-2"></i>更衣室
-                      </label>
-                    </div>
-                  </div>
-                  <div class="col-md-3 col-6">
-                    <div class="form-check facility-check">
-                      <input class="form-check-input" type="checkbox" name="facilities" value="器材租借"
-                             id="equipment_{{ venue.id }}" 
-                             {% if venue.facilities and '器材租借' in venue.facilities.split(',') %}checked{% endif %}>
-                      <label class="form-check-label" for="equipment_{{ venue.id }}">
-                        <i class="fas fa-tools me-2"></i>器材租借
-                      </label>
-                    </div>
-                  </div>
-                  <div class="col-md-3 col-6">
-                    <div class="form-check facility-check">
-                      <input class="form-check-input" type="checkbox" name="facilities" value="Wi-Fi"
-                             id="wifi_{{ venue.id }}" 
-                             {% if venue.facilities and 'Wi-Fi' in venue.facilities.split(',') %}checked{% endif %}>
-                      <label class="form-check-label" for="wifi_{{ venue.id }}">
-                        <i class="fas fa-wifi me-2"></i>Wi-Fi
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 收費規則區塊 -->
-              <div class="info-block mb-4">
-                <h6 class="block-title">
-                  <i class="fas fa-dollar-sign me-2"></i>收費規則
-                </h6>
-                <textarea name="pricing" class="form-control" rows="4" 
-                          placeholder="請輸入收費標準，例如：&#10;平日：每小時 200 元&#10;假日：每小時 250 元">{{ venue.pricing or '' }}</textarea>
-              </div>
-
-              <!-- 使用規則區塊 -->
-              <div class="info-block mb-4">
-                <h6 class="block-title">
-                  <i class="fas fa-clipboard-list me-2"></i>使用規則
-                </h6>
-                <textarea name="rules" class="form-control" rows="4" 
-                          placeholder="請輸入場地使用規則，讓使用者了解注意事項...">{{ venue.rules or '' }}</textarea>
-              </div>
-
-              <div class="text-center">
-                <button type="submit" class="btn btn-primary btn-lg">
-                  <i class="fas fa-save me-2"></i>更新場地資訊
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>        
+		  </div>
+        </div>  
       </div>
     </div>
   </div>
-		
-		
-		
-
-
-
-
-  
   {% endfor %}
 {% else %}
 <div class="row">
@@ -425,6 +502,10 @@
     color: var(--text-dark);
     cursor: pointer;
     width: 100%;
+}
+
+.courtbooking-checkbox {
+    transform: scale(1.0);
 }
 
 .timeslots-grid {
@@ -602,9 +683,11 @@
     .facility-check {
         padding: 0.5rem;
     }
+
 }
 </style>
-<script>
+
+<script> //程度分級設定功能
     const container = document.querySelector('.single-dual-range');
     const thumbMin = document.getElementById('thumbMin');
     const thumbMax = document.getElementById('thumbMax');
@@ -725,5 +808,113 @@
     // 初始化
     updateSlider();
 </script>
+
+<script>
+  const allBookings = {{ court_bookings_data | tojson }};
+  const perPage = 10;
+  
+  //不顯示今天以前的資料並排序
+  const today = new Date().toISOString().split('T')[0];
+  const filteredSortedBookings = allBookings
+    .filter(b => b.date >= today)
+    .sort((a, b) => {
+      if (a.date !== b.date) {
+        return a.date.localeCompare(b.date);
+      }
+      return a.start_time.localeCompare(b.start_time);
+    });
+
+
+  const pendingList = filteredSortedBookings.filter(b => b.status === 'pending');
+  const confirmedList = filteredSortedBookings.filter(b => b.status === 'booked' || b.status === 'cancelled');
+  
+  function renderBookings(containerId, paginationId, bookings, page, isPending) {
+    const container = document.getElementById(containerId);
+    const pagination = document.getElementById(paginationId);
+    container.innerHTML = "";
+    pagination.innerHTML = "";
+
+    const start = (page - 1) * perPage;
+    const end = start + perPage;
+    const pageItems = bookings.slice(start, end);
+
+    if (pageItems.length === 0) {
+      container.innerHTML = "<p>無資料</p>";
+      return;
+    }
+
+    pageItems.forEach(b => {
+      const card = document.createElement('div');
+      const startHour = parseInt(b.start_time.split(':')[0]);
+      const endHour = startHour + b.time_hours;
+      
+      let bgStyle = "";
+      if (b.status === "pending") {
+        bgStyle = "background: #ECF29D";
+      } else if (b.status === "booked") {
+        bgStyle = "background: #99E79E";
+      } else if (b.status === "cancelled") {
+        bgStyle = "background: #EF9A9A";
+      }
+	  
+      card.innerHTML = `
+        <div class="row align-items-center p-2 rounded mb-2" style="${bgStyle}">
+          <div class="col-md-1 text-center">
+            <input type="checkbox" class="form-check-input courtbooking-checkbox" value="${b.id}">
+          </div>
+          <div class="col-md-11">
+            <div class="row">
+              <div class="col-md-6">
+                <div><strong>日期:</strong> ${b.date}　<strong>時間:</strong> ${startHour}點 - ${endHour}點　<strong>場數:</strong> ${b.number_of_courts}</div>
+                <div><strong>預約人:</strong> ${b.user_display_name || '無'}　<strong>電話:</strong> ${b.phone || '無'}</div>
+              </div>
+              <div class="col-md-6">
+                <div><strong>備註:</strong> ${b.note || '無'}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+
+    const totalPages = Math.ceil(bookings.length / perPage);
+    for (let i = 1; i <= totalPages; i++) {
+      const li = document.createElement('li');
+      li.className = `page-item ${i === page ? 'active' : ''}`;
+      li.innerHTML = `<button class="page-link">第${i}頁</button>`;
+      li.addEventListener('click', () => {
+        renderBookings(containerId, paginationId, bookings, i, isPending);
+      });
+      pagination.appendChild(li);
+    }
+  }
+
+  function batchUpdateStatus(status) {
+    const checkboxes = document.querySelectorAll('.courtbooking-checkbox:checked');
+    const ids = Array.from(checkboxes).map(cb => cb.value);
+
+    if (ids.length === 0) {
+      alert("請先勾選要更新的預約！");
+      return;
+    }
+
+    fetch('/court_booking/batch_update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids, status })
+    }).then(res => {
+      if (res.ok) {
+        location.reload();
+      } else {
+        alert("更新失敗，請稍後再試。");
+      }
+    });
+  }
+
+  renderBookings("pending-list", "pending-pagination", pendingList, 1, true);
+  renderBookings("confirmed-list", "confirmed-pagination", confirmedList, 1, false);
+</script>
+
 
 {% endblock %}
