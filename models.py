@@ -79,7 +79,7 @@ class CourtBooking(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     venue_id = db.Column(db.Integer, db.ForeignKey('venue.id'), nullable=False)
 
-    date = db.Column(db.String(20), nullable=False)  # "2025-06-13"
+    date = db.Column(db.Date, nullable=False)  # "2025-06-13"
     start_time = db.Column(db.String(5), nullable=False)  # e.g. "09:00"
     time_hours = db.Column(db.Integer, default=1)
     number_of_courts = db.Column(db.Integer, default=1)

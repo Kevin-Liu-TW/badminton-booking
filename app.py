@@ -145,7 +145,7 @@ def venue(venue_id):
         {
         
             "id": b.id,
-            "date": b.date,
+            "date": b.date.strftime('%Y-%m-%d'),
             "start_time": b.start_time,
             "time_hours": b.time_hours,
             "status": b.status,
@@ -339,7 +339,7 @@ def get_user_bookings(venue_id):
         "user_bookings": [
             {
                 "id": b.id,
-                "date": b.date,
+                "date": b.date.strftime('%Y-%m-%d'),
                 "start_time": b.start_time,
                 "time_hours": b.time_hours,
                 "status": b.status,
@@ -350,7 +350,7 @@ def get_user_bookings(venue_id):
         "all_bookings": [
             {
                 "id": b.id,
-                "date": b.date,
+                "date": b.date.strftime('%Y-%m-%d'),
                 "start_time": b.start_time,
                 "time_hours": b.time_hours,
                 "status": b.status,
@@ -507,7 +507,7 @@ def manager_dashboard():
             "venue_id": b.venue_id,
             "venue_name": b.venue.name,  # 可直接取得場館名稱
             "user_display_name": b.user.display_name if b.user else "未知使用者",
-            "date": b.date,
+            "date": b.date.strftime('%Y-%m-%d'),
             "start_time": b.start_time,
             "status": b.status,
             "number_of_courts": b.number_of_courts,
