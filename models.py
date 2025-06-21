@@ -22,7 +22,7 @@ class User(UserMixin, db.Model):
     
     permission = db.Column(db.String(20), default='guest')  # 'guest', 'manager', 'admin'
     
-    managed_venues = db.relationship('Venue', secondary=venue_managers, back_populates='managers')
+    managed_venues = db.relationship('Venue', secondary='venue_managers', back_populates='managers')
 
     def has_permission(self, perm):
         levels = {'guest': 0, 'manager': 1, 'admin': 2}
@@ -36,6 +36,9 @@ class Venue(db.Model):
     phone = db.Column(db.String(20))
     city = db.Column(db.String(20))
     address = db.Column(db.String(200))
+    openHour = db.Column(db.Time, nullable=True)
+    closeHour = db.Column(db.Time, nullable=True)
+    position = db.Column(db.Integer, nullable=True)
     
     # 設施欄位 - 儲存為逗號分隔的字串
     facilities = db.Column(db.Text)
@@ -46,7 +49,7 @@ class Venue(db.Model):
     
     # 關聯
     timeslots = db.relationship('Timeslot', backref='venue', lazy=True, cascade='all, delete-orphan')
-    managers = db.relationship('User', secondary=venue_managers, back_populates='managed_venues')
+    managers = db.relationship('User', secondary='venue_managers', back_populates='managed_venues')
 
     def __repr__(self):
         return f'<Venue {self.name}>'
@@ -70,3 +73,24 @@ class Booking(db.Model):
     display_name = db.Column(db.String(100))
     note = db.Column(db.Text)
     number_of_people = db.Column(db.Integer)
+    
+class CourtBooking(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    venue_id = db.Column(db.Integer, db.ForeignKey('venue.id'), nullable=False)
+
+    date = db.Column(db.String(20), nullable=False)  # "2025-06-13"
+    start_time = db.Column(db.String(5), nullable=False)  # e.g. "09:00"
+    time_hours = db.Column(db.Integer, default=1)
+    number_of_courts = db.Column(db.Integer, default=1)
+
+    phone = db.Column(db.String(20))
+    note = db.Column(db.Text)
+
+    status = db.Column(db.String(20), default='pending')  # pending/booked/rejected/cancelled
+
+    user = db.relationship('User', backref='court_bookings')
+    venue = db.relationship('Venue', backref='court_bookings')
+
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())

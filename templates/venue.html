@@ -1,36 +1,49 @@
 {% extends "base.html" %}
 
-{% block title %}{{ venue.name }} - 羽球零打預約{% endblock %}
+{% block title %}{{ venue.name }}{% endblock %}
 
 {% block content %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<!-- Venue Header -->
-<div class="row mb-4">
-  <div class="col-12">
-    <div class="text-center mb-4">
-      <h1 class="display-4 fw-bold text-gradient mb-3">
-        <i class="fa-solid fa-house me-3" style="color: var(--primary-color);"></i>
-        {{ venue.name }}
-      </h1>
-      <p class="lead text-muted">查看可預約時段並完成您的零打報名</p>
-    </div>
+
+<div class="text-center mb-4">
+  <h1 class="fw-bold text-gradient mb-3">
+    <i class="fa-solid fa-house me-3" style="color: var(--primary-color);"></i>
+    {{ venue.name }}
+  </h1>
+</div>
+
+<ul class="nav nav-tabs mb-4" id="venueTab" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="rules-tab" data-bs-toggle="tab" data-bs-target="#tab-rules" type="button" role="tab">場地規範</button>
+  </li>  
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="booking-tab" data-bs-toggle="tab" data-bs-target="#tab-booking" type="button" role="tab">零打報名</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="rent-tab" data-bs-toggle="tab" data-bs-target="#tab-rent" type="button" role="tab">場地租借</button>
+  </li>
+</ul>
+
+<div class="tab-content" id="venueTabContent">
+  <!-- First tab -->
+  <div class="tab-pane fade show active" id="tab-rules" role="tabpanel">
     
+    <!-- Venue Header -->  
     <div class="card venue-info-card mb-4">
       <div class="card-body">
-	  
         <div class="row" style="height: 300px;">
           <div class="col-7">
             <div class="d-flex flex-column h-100">
               <div class="flex-fill mb-2">
-			    <h5 class="fw-semibold mb-3">
-				  <i class="fas fa-info-circle me-2" style="color: var(--primary-color);"></i>
-			        使用規定:
-				  </i>
-				</h5>
+ 		        <h5 class="fw-semibold mb-3">
+ 			      <i class="fas fa-info-circle me-2" style="color: var(--primary-color);"></i>
+ 		            使用規定:
+ 			      </i>
+ 			    </h5>
                 {% if venue.rules %}
                   <div class="rules-content">
-	            <p class="rules-text" style="white-space: pre-line;">{{ venue.rules }}</p>
+                    <p class="rules-text" style="white-space: pre-line;">{{ venue.rules }}</p>
                   </div>
                 {% else %}
                   <div class="text-center py-3">
@@ -38,13 +51,13 @@
                     <p class="text-muted fst-italic">暫未提供使用規定</p>
                   </div>
                 {% endif %}
-			  </div>
+ 		      </div>
               <div class="flex-fill">
-			    <h5 class="fw-semibold mb-3">
-				  <i class="fas fa-info-circle me-2" style="color: var(--primary-color);"></i>
-			        收費規則:
-				  </i>
-				</h5>
+ 		        <h5 class="fw-semibold mb-3">
+ 			      <i class="fas fa-info-circle me-2" style="color: var(--primary-color);"></i>
+ 		            收費規則:
+ 			      </i>
+ 			    </h5>
                 {% if venue.pricing %}
                   <div class="rules-content">
                     <p class="rules-text" style="white-space: pre-line;">{{ venue.pricing }}</p>
@@ -55,300 +68,431 @@
                     <p class="text-muted fst-italic">暫未提供收費規則</p>
                   </div>
                 {% endif %}
-			  </div>
+ 		      </div>
             </div>
           </div>
           <div class="col-5">
             <div class="h-100">
-			    <h5 class="fw-semibold mb-3">
-				  <i class="fas fa-info-circle me-2" style="color: var(--primary-color);"></i>
-			        場地設施:
-				  </i>
-				</h5>
-                {% if venue.rules %}
-                  <div class="rules-content">
-                    <div class="facilities-container">
-                      {% if venue.facilities %}
-                        {% for facility in venue.facilities.split(',') %}
-                          {% if facility.strip() == '冷氣' %}
-                            <div class="facility-icon available" title="冷氣">
-                              <i class="fas fa-snowflake" style="width: 16px; text-align: center;"></i>
-                              <span style="margin-left: 8px;">冷氣</span>
-                            </div>	
-                          {% elif facility.strip() == '廁所' %}
-                            <div class="facility-icon available" title="廁所">
-                              <i class="fas fa-restroom" style="width: 16px; text-align: center;"></i>
-                              <span style="margin-left: 8px;">廁所</span>
-                            </div>
-                          {% elif facility.strip() == '淋浴間' %}
-                            <div class="facility-icon available" title="淋浴間">
-                              <i class="fas fa-shower" style="width: 16px; text-align: center;"></i>
-                              <span style="margin-left: 8px;">淋浴間</span>
-                            </div>
-                          {% elif facility.strip() == '停車場' %}
-                            <div class="facility-icon available" title="停車場">
-                              <i class="fas fa-parking" style="width: 16px; text-align: center;"></i>
-                              <span style="margin-left: 8px;">停車場</span>
-                            </div>
-                          {% elif facility.strip() == '飲水機' %}
-                            <div class="facility-icon available" title="飲水機">
-                              <i class="fas fa-tint" style="width: 16px; text-align: center;"></i>
-                              <span style="margin-left: 8px;">飲水機</span>
-                            </div>
-                          {% elif facility.strip() == '更衣室' %}
-                            <div class="facility-icon available" title="更衣室">
-                              <i class="fas fa-door-open" style="width: 16px; text-align: center;"></i>
-                              <span style="margin-left: 8px;">更衣室</span>
-                            </div>
-                          {% elif facility.strip() == '器材租借' %}
-                            <div class="facility-icon available" title="器材租借">
-                              <i class="fas fa-tools" style="width: 16px; text-align: center;"></i>
-                              <span style="margin-left: 8px;">器材租借</span>
-                            </div>
-                          {% elif facility.strip() == 'Wi-Fi' %}
-                            <div class="facility-icon available" title="Wi-Fi">
-                              <i class="fas fa-wifi" style="width: 16px; text-align: center;"></i>
-                              <span style="margin-left: 8px;">WiFi</span>
-                            </div>
-                          {% endif %}
-                        {% endfor %}
-                      {% endif %}
-                    </div>
-                  </div>
-                {% else %}
-                  <div class="text-center py-3">
-                    <i class="fas fa-exclamation-circle text-muted mb-2" style="font-size: 2rem;"></i>
-                    <p class="text-muted fst-italic">暫未提供設施資訊</p>
-                  </div>
-                {% endif %}
-			</div>
-          </div>
-        </div>
-	    
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<!-- Timeslots Section -->
-<div class="row mb-4">
-  <div class="col-12">
-    <h3 class="text-center mb-4">
-      <i class="fas fa-calendar-alt me-2" style="color: var(--primary-color);"></i>
-      可預約時段
-    </h3>
-  </div>
-</div>
-
-<form method="get" action="{{ url_for('venue', venue_id=venue.id) }}" class="row mb-4 justify-content-center g-1">
-  <div class="col-md-3 form-floating">
-    <input type="text" id="date" name="date" class="form-control"
-           value="{{ request.args.get('date', '') }}">
-    <label for="date">日期</label>
-  </div>
-
-  <div class="col-md-2 form-floating">
-    <select name="time" id="time" class="form-select">
-      <option value="" {% if not request.args.get('time') %}selected{% endif %}>不分時段</option>
-      <option value="morning" {% if request.args.get('time') == 'morning' %}selected{% endif %}>上午</option>
-      <option value="afternoon" {% if request.args.get('time') == 'afternoon' %}selected{% endif %}>下午</option>
-    </select>
-    <label for="time">時段</label>
-  </div>
-
-  <div class="col-md-2 form-floating">
-    <select name="level" id="level" class="form-select">
-      <option value="" {% if not request.args.get('level') %}selected{% endif %}>不分程度</option>
-      {% for lv in range(1, 19) %}
-        <option value="{{ lv }}" {% if request.args.get('level') == lv|string %}selected{% endif %}>{{ lv }} 級</option>
-      {% endfor %}
-    </select>
-    <label for="level">程度</label>
-  </div>
-
-  <div class="col-md-2 d-grid">
-    <button type="submit" class="btn btn-primary">篩選</button>
-  </div>
-  <div class="col-md-2 d-grid">
-    <a href="{{ url_for('venue', venue_id=venue.id) }}" class="btn btn-primary">清除</a>
-  </div>
-</form>
-
-{% if timeslots %}
-{% for slot in timeslots %}
-<div class="row mb-4">
-  <div class="col-12">
-    <div class="card timeslot-card">
-      <div class="card-header">
-        <div class="row align-items-center">
-          <div class="col-md-4">
-            <div class="timeslot-info">
-              <h5 class="mb-1">
-                <i class="fas fa-calendar-day"></i>
-                {{ slot.date }}
-				<p></p>
-                <i class="fas fa-clock"></i>
-                {{ slot.start_time }}-{{ slot.end_time }}
-              </h5>
-            </div>
-          </div>
-          <div class="col-md-8">
-            <div class="capacity-info">
-              <div class="capacity-stats mb-2">
-                <span class="capacity-badge">
-                  <i class="fa-solid fa-star me-2"></i>
-                  {{ slot.level_min }} - {{ slot.level_max }} 級
-                </span>
-                <span class="capacity-badge">
-                  <i class="fas fa-users me-2"></i>
-                  已報名: {{ bookings[slot.id].total }} / 上限: {{ slot.capacity }} 人
-                </span>
-              </div>
-              {% set percentage = (bookings[slot.id].total / slot.capacity * 100) if slot.capacity > 0 else 0 %}
-              <div class="progress" style="height: 12px; border-radius: 6px; background-color: #e9ecef; border: 2px solid #dee2e6;">
-                  <div class="progress-bar" 
-                       style="width: {{ percentage }}%; 
-                              {% if percentage == 100 %}
-                                  background-color: #d71259;
-                              {% elif percentage > 70 %}
-                                  background-color: #ffbb42;
-                              {% else %}
-                                  background-color: #03c39a;
-                              {% endif %}
-                              transition: width 0.3s ease, background-color 0.3s ease;">
-                  </div>
-              </div>			  
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="card-body">
-        <!-- Booking Form -->
-        {% if current_user.is_authenticated %}
-        <div class="booking-form-section mb-4">
-          <h6 class="fw-semibold mb-3">
-            <i class="fas fa-plus-circle me-2" style="color: var(--primary-color);"></i>
-            我要報名這個時段
-          </h6>
-          <form action="{{ url_for('book', timeslot_id=slot.id) }}" method="post">
-            <div class="row g-3">
-              <div class="col-md-3">
-                <label class="form-label">顯示名稱</label>
-                <input type="text" name="display_name" class="form-control" 
-                       placeholder="請輸入您的名稱" required>
-              </div>
-              <div class="col-md-2">
-                <label class="form-label">預約人數</label>
-                <input type="number" name="number" class="form-control" 
-                       placeholder="人數" min="1" max="{{ slot.capacity - bookings[slot.id].total }}" required>
-              </div>
-              <div class="col-md-5">
-                <label class="form-label">備註說明 <span class="text-muted small">(選填)</span></label>
-                <input type="text" name="note" class="form-control" 
-                       placeholder="如有特殊需求或備註請填寫">
-              </div>
-              <div class="col-md-2 d-flex align-items-end">
-                <button type="submit" class="btn btn-outline-success w-100">
-                  <i class="fas fa-check me-2"></i>
-                  報名
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
-        {% else %}
-        <div class="text-center py-3">
-          <i class="fas fa-sign-in-alt text-muted mb-3" style="font-size: 2.5rem;"></i>
-          <h6 class="text-muted mb-3">請先登入才能進行報名</h6>
-          <a href="{{ url_for('mock_login') }}" class="btn btn-primary">
-            <i class="fas fa-sign-in-alt me-2"></i>立即登入
-          </a>
-        </div>
-        {% endif %}
-
-        <hr class="my-4">
-
-        <!-- Booking List -->
-        <div class="booking-list-section">
-          <h6 class="fw-semibold mb-3">
-            <i class="fas fa-users me-2" style="color: var(--primary-color);"></i>
-            目前報名名單
-          </h6>
-          
-          {% if bookings[slot.id].records %}
-          <div class="booking-items">
-            {% for b in bookings[slot.id].records %}
-            <div class="booking-item">
-              <div class="row align-items-center">
-                <div class="col-8 col-sm-7">
-                  <div class="booking-info">
-                    <div class="booking-name mb-2">
-                      <i class="fas fa-user-circle me-2" style="color: var(--primary-color);"></i>
-                      <strong>{{ b.display_name }}</strong>
-                      <span class="sport-badge ms-2">{{ b.number_of_people }}人</span>
-                    </div>
-                    {% if b.note %}
-                    <div class="booking-note">
-                      <i class="fas fa-sticky-note me-2 text-muted"></i>
-                      <span class="text-muted small">備註: {{ b.note }}</span>
-                    </div>
+ 		      <h5 class="fw-semibold mb-3">
+ 			    <i class="fas fa-info-circle me-2" style="color: var(--primary-color);"></i>
+ 		          場地設施:
+ 			    </i>
+ 			  </h5>
+              {% if venue.facilities %}
+                <div class="rules-content">
+                  <div class="facilities-container">
+                    {% if venue.facilities %}
+                      {% for facility in venue.facilities.split(',') %}
+                        {% if facility.strip() == '冷氣' %}
+                          <div class="facility-icon available" title="冷氣">
+                            <i class="fas fa-snowflake" style="width: 16px; text-align: center;"></i>
+                            <span style="margin-left: 8px;">冷氣</span>
+                          </div>	
+                        {% elif facility.strip() == '廁所' %}
+                          <div class="facility-icon available" title="廁所">
+                            <i class="fas fa-restroom" style="width: 16px; text-align: center;"></i>
+                            <span style="margin-left: 8px;">廁所</span>
+                          </div>
+                        {% elif facility.strip() == '淋浴間' %}
+                          <div class="facility-icon available" title="淋浴間">
+                            <i class="fas fa-shower" style="width: 16px; text-align: center;"></i>
+                            <span style="margin-left: 8px;">淋浴間</span>
+                          </div>
+                        {% elif facility.strip() == '停車場' %}
+                          <div class="facility-icon available" title="停車場">
+                            <i class="fas fa-parking" style="width: 16px; text-align: center;"></i>
+                            <span style="margin-left: 8px;">停車場</span>
+                          </div>
+                        {% elif facility.strip() == '飲水機' %}
+                          <div class="facility-icon available" title="飲水機">
+                            <i class="fas fa-tint" style="width: 16px; text-align: center;"></i>
+                            <span style="margin-left: 8px;">飲水機</span>
+                          </div>
+                        {% elif facility.strip() == '更衣室' %}
+                          <div class="facility-icon available" title="更衣室">
+                            <i class="fas fa-door-open" style="width: 16px; text-align: center;"></i>
+                            <span style="margin-left: 8px;">更衣室</span>
+                          </div>
+                        {% elif facility.strip() == '器材租借' %}
+                          <div class="facility-icon available" title="器材租借">
+                            <i class="fas fa-tools" style="width: 16px; text-align: center;"></i>
+                            <span style="margin-left: 8px;">器材租借</span>
+                          </div>
+                        {% elif facility.strip() == 'Wi-Fi' %}
+                          <div class="facility-icon available" title="Wi-Fi">
+                            <i class="fas fa-wifi" style="width: 16px; text-align: center;"></i>
+                            <span style="margin-left: 8px;">WiFi</span>
+                          </div>
+                        {% endif %}
+                      {% endfor %}
                     {% endif %}
                   </div>
                 </div>
-                <div class="col-4 col-sm-5 text-end">
-                  {% if current_user.is_authenticated and (
-                        b.user_id == current_user.id or
-                        current_user.permission == 'admin' or
-                        current_user.id in venue_managers
-                      )%}
-                  <form method="POST" action="{{ url_for('delete_booking', booking_id=b.id) }}" 
-                        style="display:inline;" 
-                        onsubmit="return confirm('確定要取消這筆預約嗎？');">
-                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                      <i class="fas fa-times me-1"></i>取消
-                    </button>
-                  </form>
-                  {% endif %}
+              {% else %}
+                <div class="text-center py-3">
+                  <i class="fas fa-exclamation-circle text-muted mb-2" style="font-size: 2rem;"></i>
+                  <p class="text-muted fst-italic">暫未提供設施資訊</p>
                 </div>
-              </div>
-            </div>
-            {% if not loop.last %}<hr class="booking-divider">{% endif %}
-            {% endfor %}
+              {% endif %}
+ 		    </div>
           </div>
-          {% else %}
-          <div class="empty-booking-state">
-            <div class="text-center py-4">
-              <i class="fas fa-calendar-times text-muted mb-3" style="font-size: 2.5rem;"></i>
-              <h6 class="text-muted mb-2">目前還沒有人報名這個時段</h6>
-              <p class="text-muted small mb-0">成為第一個報名的人吧！</p>
-            </div>
-          </div>
-          {% endif %}
+		  
         </div>
       </div>
     </div>
   </div>
-</div>
-{% endfor %}
 
-{% else %}
-<div class="row">
-  <div class="col-12">
-    <div class="card text-center py-5">
-      <div class="card-body">
-        <i class="fas fa-calendar-times mb-4" style="font-size: 4rem; color: var(--secondary-color);"></i>
-        <h3 class="text-muted mb-3">目前沒有開放的時段</h3>
-        <p class="text-muted mb-4">請稍後再回來查看，或聯絡場地管理員了解時段安排。</p>
-        <a href="{{ url_for('index') }}" class="btn btn-primary">
-          <i class="fas fa-arrow-left me-2"></i>回到場地總覽
-        </a>
+
+  <!-- Second tab -->
+  <div class="tab-pane fade" id="tab-booking" role="tabpanel">
+    
+    <!-- Timeslots Section -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <h3 class="text-center mb-4">
+          <i class="fas fa-calendar-alt me-2" style="color: var(--primary-color);"></i>
+          可預約時段
+        </h3>
+      </div>
+    </div>
+    
+    <form method="get" action="{{ url_for('venue', venue_id=venue.id) }}" class="row mb-4 justify-content-center g-1">
+      <div class="col-md-3 form-floating">
+        <input type="text" id="date" name="date" class="form-control"
+               value="{{ request.args.get('date', '') }}">
+        <label for="date">日期</label>
+      </div>
+    
+      <div class="col-md-2 form-floating">
+        <select name="time" id="time" class="form-select">
+          <option value="" {% if not request.args.get('time') %}selected{% endif %}>不分時段</option>
+          <option value="morning" {% if request.args.get('time') == 'morning' %}selected{% endif %}>上午</option>
+          <option value="afternoon" {% if request.args.get('time') == 'afternoon' %}selected{% endif %}>下午</option>
+        </select>
+        <label for="time">時段</label>
+      </div>
+    
+      <div class="col-md-2 form-floating">
+        <select name="level" id="level" class="form-select">
+          <option value="" {% if not request.args.get('level') %}selected{% endif %}>不分程度</option>
+          {% for lv in range(1, 19) %}
+            <option value="{{ lv }}" {% if request.args.get('level') == lv|string %}selected{% endif %}>{{ lv }} 級</option>
+          {% endfor %}
+        </select>
+        <label for="level">程度</label>
+      </div>
+    
+      <div class="col-md-2 d-grid">
+        <button type="submit" class="btn btn-primary">篩選</button>
+      </div>
+      <div class="col-md-2 d-grid">
+        <a href="{{ url_for('venue', venue_id=venue.id) }}" class="btn btn-primary">清除</a>
+      </div>
+    </form>
+
+    {% if timeslots %}
+    {% for slot in timeslots %}
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card timeslot-card">
+          <div class="card-header">
+            <div class="row align-items-center">
+              <div class="col-md-4">
+                <div class="timeslot-info">
+                  <h5 class="mb-1">
+                    <i class="fas fa-calendar-day"></i>
+                    {{ slot.date }}
+    				<p></p>
+                    <i class="fas fa-clock"></i>
+                    {{ slot.start_time }}-{{ slot.end_time }}
+                  </h5>
+                </div>
+              </div>
+              <div class="col-md-8">
+                <div class="capacity-info">
+                  <div class="capacity-stats mb-2">
+                    <span class="capacity-badge">
+                      <i class="fa-solid fa-star me-2"></i>
+                      {{ slot.level_min }} - {{ slot.level_max }} 級
+                    </span>
+                    <span class="capacity-badge">
+                      <i class="fas fa-users me-2"></i>
+                      已報名: {{ bookings[slot.id].total }} / 上限: {{ slot.capacity }} 人
+                    </span>
+                  </div>
+                  {% set percentage = (bookings[slot.id].total / slot.capacity * 100) if slot.capacity > 0 else 0 %}
+                  <div class="progress" style="height: 12px; border-radius: 6px; background-color: #e9ecef; border: 2px solid #dee2e6;">
+                      <div class="progress-bar" 
+                           style="width: {{ percentage }}%; 
+                                  {% if percentage == 100 %}
+                                      background-color: #d71259;
+                                  {% elif percentage > 70 %}
+                                      background-color: #ffbb42;
+                                  {% else %}
+                                      background-color: #03c39a;
+                                  {% endif %}
+                                  transition: width 0.3s ease, background-color 0.3s ease;">
+                      </div>
+                  </div>			  
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card-body">
+          <!-- Booking Form -->
+          {% if current_user.is_authenticated %}
+          <div class="booking-form-section mb-4">
+            <h6 class="fw-semibold mb-3">
+              <i class="fas fa-plus-circle me-2" style="color: var(--primary-color);"></i>
+              我要報名這個時段
+            </h6>
+            <form action="{{ url_for('book', timeslot_id=slot.id) }}" method="post">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label">顯示名稱</label>
+                  <input type="text" name="display_name" class="form-control" 
+                         placeholder="請輸入您的名稱" required>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label">預約人數</label>
+                  <input type="number" name="number" class="form-control" 
+                         placeholder="人數" min="1" max="{{ slot.capacity - bookings[slot.id].total }}" required>
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label">備註說明 <span class="text-muted small">(選填)</span></label>
+                  <input type="text" name="note" class="form-control" 
+                         placeholder="如有特殊需求或備註請填寫">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                  <button type="submit" class="btn btn-outline-success w-100">
+                    <i class="fas fa-check me-2"></i>
+                    報名
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+          {% else %}
+          <div class="text-center py-3">
+            <i class="fas fa-sign-in-alt text-muted mb-3" style="font-size: 2.5rem;"></i>
+            <h6 class="text-muted mb-3">請先登入才能進行報名</h6>
+            <a href="{{ url_for('mock_login') }}" class="btn btn-primary">
+              <i class="fas fa-sign-in-alt me-2"></i>立即登入
+            </a>
+          </div>
+          {% endif %}
+  
+          <hr class="my-4">
+  
+            <!-- Booking List -->
+            <div class="booking-list-section">
+            <h6 class="fw-semibold mb-3">
+              <i class="fas fa-users me-2" style="color: var(--primary-color);"></i>
+              目前報名名單
+            </h6>
+            
+            {% if bookings[slot.id].records %}
+            <div class="booking-items">
+              {% for b in bookings[slot.id].records %}
+              <div class="booking-item">
+                <div class="row align-items-center">
+                  <div class="col-8 col-sm-7">
+                    <div class="booking-info">
+                      <div class="booking-name mb-2">
+                        <i class="fas fa-user-circle me-2" style="color: var(--primary-color);"></i>
+                        <strong>{{ b.display_name }}</strong>
+                        <span class="sport-badge ms-2">{{ b.number_of_people }}人</span>
+                      </div>
+                      {% if b.note %}
+                      <div class="booking-note">
+                        <i class="fas fa-sticky-note me-2 text-muted"></i>
+                        <span class="text-muted small">備註: {{ b.note }}</span>
+                      </div>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <div class="col-4 col-sm-5 text-end">
+                    {% if current_user.is_authenticated and (
+                          b.user_id == current_user.id or
+                          current_user.permission == 'admin' or
+                          current_user.id in venue_managers
+                        )%}
+                    <form method="POST" action="{{ url_for('delete_booking', booking_id=b.id) }}" 
+                          style="display:inline;" 
+                          onsubmit="return confirm('確定要取消這筆預約嗎？');">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-times me-1"></i>取消
+                      </button>
+                    </form>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              {% if not loop.last %}<hr class="booking-divider">{% endif %}
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-booking-state">
+              <div class="text-center py-4">
+                <i class="fas fa-calendar-times text-muted mb-3" style="font-size: 2.5rem;"></i>
+                <h6 class="text-muted mb-2">目前還沒有人報名這個時段</h6>
+                <p class="text-muted small mb-0">成為第一個報名的人吧！</p>
+              </div>
+            </div>
+            {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div class="row">
+      <div class="col-12">
+        <div class="card text-center py-5">
+          <div class="card-body">
+            <i class="fas fa-calendar-times mb-4" style="font-size: 4rem; color: var(--secondary-color);"></i>
+            <h3 class="text-muted mb-3">目前沒有開放的時段</h3>
+            <p class="text-muted mb-4">請稍後再回來查看，或聯絡場地管理員了解時段安排。</p>
+            <a href="{{ url_for('index') }}" class="btn btn-primary">
+              <i class="fas fa-arrow-left me-2"></i>回到場地總覽
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  
+  <!-- third tab -->
+  <div class="tab-pane fade" id="tab-rent" role="tabpanel">
+    <div class="card">
+      <div class="card-body">		
+        <div class="card mb-4">
+          <div class="card-body">
+            <h5 class="fw-semibold mb-3"><i class="fas fa-edit me-2"></i>場地租借</h5>
+            <form id="court-booking-form">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label">租借日期</label>
+                  <input type="date" name="date" class="form-control" required>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">開始時間</label>
+                  <input type="time" name="start_time" class="form-control" required>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">場地數量</label>
+                  <input type="number" name="number_of_courts" class="form-control" min="1" required>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">使用時數</label>
+                  <input type="number" name="time_hours" class="form-control" min="1" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">登記人</label>
+                    <input type="text" name="applicant_name" class="form-control" value="{{ current_user.display_name }}" readonly>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">聯絡電話</label>
+                  <input type="text" name="phone" class="form-control" required>
+                </div>			   
+                <div class="col-md-6">
+                  <label class="form-label">備註（選填）</label>
+                  <input type="text" name="note" class="form-control">
+                </div>
+                <div class="col-12 text-end">
+                  <button type="submit" class="btn btn-success">
+                    <i class="fas fa-check-circle me-1"></i>送出租借申請
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+	    
+
+        <div class="card mb-4" id="user-booking-panel">
+          <div class="card-body">
+            <h5 class="fw-semibold mb-3"><i class="fas fa-list-ul me-2"></i>我的租借狀態</h5>
+            <div id="user-booking-list" class="accordion"></div>
+          </div>
+        </div>
+
+		
+        <div class="calendar-container" id="calendar-container-{{ venue.id }}">
+          <!-- 週導航 -->
+          <div class="week-navigation">
+            <div class="row align-items-center">
+              <div class="col-md-3">
+                <button class="btn btn-nav" onclick="previousWeek('{{ venue.id }}')">
+                  <i class="fas fa-chevron-left"></i> 上一週
+                </button>
+              </div>
+              <div class="col-md-6 text-center">
+                <div class="currentWeek" id="currentWeek-{{ venue.id }}" style="font-size: 22px;"></div>
+              </div>
+              <div class="col-md-3 text-end">
+                <button class="btn btn-nav" onclick="nextWeek('{{ venue.id }}')">
+                  下一週 <i class="fas fa-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 圖例 -->
+          <div class="legend">
+            <h6 class="mb-3"><i class="fas fa-info-circle"></i> 預約狀態說明</h6>
+			<div class="legend-item">
+              <div class="legend-block available-block"></div>
+              <span>可預約</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-block pending-block"></div>
+              <span>待確認</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-block booked-block"></div>
+              <span>已預約</span>
+            </div>
+            <div class="legend-item ms-4">
+              <small class="text-muted">此場館每個時段共 {{venue.position}} 個場地</small>
+            </div>
+          </div>
+          
+          <!-- 日曆網格 -->
+          <div class="calendar-grid">
+            <div class="table-responsive">
+              <table class="table table-borderless mb-0">
+                <thead>
+                  <tr>
+                    <th class="time-header text-center">時間</th>
+                    <th class="day-header-{{ venue.id }} text-center"></th>
+                    <th class="day-header-{{ venue.id }} text-center"></th>
+                    <th class="day-header-{{ venue.id }} text-center"></th>
+                    <th class="day-header-{{ venue.id }} text-center"></th>
+                    <th class="day-header-{{ venue.id }} text-center"></th>
+                    <th class="day-header-{{ venue.id }} text-center"></th>
+                    <th class="day-header-{{ venue.id }} text-center"></th>
+                  </tr>
+                </thead>
+                <tbody id="calendarBody-{{ venue.id }}">
+                    <!-- JavaScript 將在這裡生成時間槽 -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+		
+
+		
       </div>
     </div>
   </div>
 </div>
-{% endif %}
+
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
@@ -358,6 +502,314 @@
     });
   });
 </script>
+
+<script>
+  const venueId = "{{ venue.id }}";
+  const rawBookings = {{ court_bookings|tojson }};
+  console.log("ConsoleView1:", rawBookings);
+  const venueConfig = {
+    openHour: {{ venue.openHour.hour if venue.openHour else 11 }},
+    closeHour: {{ (venue.closeHour.hour if venue.closeHour.hour != 0 else 24) if venue.closeHour else 13 }},
+    position: {{ venue.position or 1 }}
+  };
+  const venueData = {};
+  const weekState = {};
+
+  function initializeVenueData() {
+    venueData[venueId] = {};
+    for (let hour = venueConfig.openHour; hour < venueConfig.closeHour; hour++) {
+      for (let day = 0; day < 7; day++) {
+        venueData[venueId][`${hour}-${day}`] = {
+          total: venueConfig.position,
+          available: venueConfig.position,
+          pending: 0,
+          booked: 0
+        };
+      }
+    }
+  }
+
+  function applyBookingsToVenueData(bookings) {
+    const startOfWeek = new Date(weekState[venueId]); // Sunday
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    
+	bookings.forEach(b => {
+      const [year, month, day] = b.date.split("-").map(Number);
+      const date = new Date(year, month - 1, day);
+	  
+	  if (date < startOfWeek || date > endOfWeek) return;
+	  
+      const weekday = date.getDay();
+      const startHour = parseInt(b.start_time.split(":")[0]);
+      const duration = b.time_hours || 1;  // 新增欄位：持續幾小時
+  
+      for (let i = 0; i < duration; i++) {
+        const hour = startHour + i;
+        const key = `${hour}-${weekday}`;
+        if (!venueData[venueId][key]) {
+          console.warn("Missing key in venueData:", key);
+          continue;
+        }		
+  
+        if (b.status === 'pending') {
+          venueData[venueId][key].pending += b.number_of_courts;
+        } else if (b.status === 'booked') {
+          venueData[venueId][key].booked += b.number_of_courts;
+        }
+  
+        venueData[venueId][key].available =
+          venueData[venueId][key].total -
+          venueData[venueId][key].pending -
+          venueData[venueId][key].booked;
+      }
+    });
+  }
+
+  function generateVenueBlocks(data, isPast) {
+    const block = (count, className) => {
+      const isZero = count === 0 ? 'zero-block' : '';
+      const styleClass = isPast ? 'past-block' : className;
+  
+      const labelMap = {
+        'available-block': '可預約',
+        'pending-block': '待確認',
+        'booked-block': '已預約'
+      };
+      
+      const label = labelMap[className] || '';
+      const title = isPast ? '時段已過' : `${label} ${count} 個場地`;
+  
+      return `<span class="venue-block ${styleClass} ${isZero}" title="${title}">${count}</span>`;
+    };
+  
+    return block(data.available, 'available-block') +
+           block(data.pending, 'pending-block') +
+           block(data.booked, 'booked-block');
+  }
+
+
+  function generateCalendarForVenue() {
+    const calendarBody = document.getElementById(`calendarBody-${venueId}`);
+    if (!calendarBody || !venueData[venueId]) return;
+
+    let html = '';
+    for (let hour = venueConfig.openHour; hour < venueConfig.closeHour; hour++) {
+      const timeLabel = `${hour.toString().padStart(2, '0')}-${(hour + 1).toString().padStart(2, '0')}`;
+      html += `<tr><td class="time-header">${timeLabel}</td>`;
+      for (let day = 0; day < 7; day++) {
+        const key = `${hour}-${day}`;
+        const data = venueData[venueId][key] || { total: 0, available: 0, pending: 0, booked: 0 };
+        const cellDate = new Date(weekState[venueId]);
+        cellDate.setDate(cellDate.getDate() + day);
+        cellDate.setHours(hour, 0, 0, 0);
+        
+        const now = new Date();
+        const isPast = cellDate < now;
+        
+        const blocks = generateVenueBlocks(data, isPast);
+        html += `<td class="time-slot"><div class="d-flex justify-content-center align-items-center h-100">${blocks}</div></td>`;
+      }
+      html += `</tr>`;
+    }
+    calendarBody.innerHTML = html;
+  }
+
+  function updateWeekDisplay() {
+    const container = document.getElementById(`calendar-container-${venueId}`);
+    const startDate = weekState[venueId];
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 6);
+
+    const options = { month: 'short', day: 'numeric' };
+    container.querySelector(`#currentWeek-${venueId}`).textContent =
+      `${startDate.getFullYear()} ${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
+
+    function getChineseDayName(date) {
+      const days = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+      return days[date.getDay()];
+    }
+    const headers = container.querySelectorAll(`.day-header-${venueId}`);
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      const dayStr = `${date.getMonth() + 1}/${date.getDate()}`;
+      if (headers[i]) {
+        headers[i].innerHTML = `${dayStr} (${getChineseDayName(date)})<br>`;
+      }
+    }
+  }
+
+  function previousWeek() {
+    weekState[venueId].setDate(weekState[venueId].getDate() - 7);
+    generateCalendarForVenue();
+	fetchAndUpdateBookings();
+    updateWeekDisplay();
+  }
+
+  function nextWeek() {
+    weekState[venueId].setDate(weekState[venueId].getDate() + 7);
+    generateCalendarForVenue();
+	fetchAndUpdateBookings();
+    updateWeekDisplay();
+  }
+
+
+  async function fetchAndRenderUserBookings() {
+    const res = await fetch(`/venue/${venueId}/bookings`);
+    const result = await res.json();
+    if (result.status === "ok") {
+      renderUserBookingList(result.user_bookings);
+    }
+  }
+
+  async function fetchAndUpdateBookings() {
+    const res = await fetch(`/venue/${venueId}/bookings`);
+    const result = await res.json();
+	
+	console.log("Bookings API 回傳：", result);
+    
+	if (result.status === "ok") {
+      initializeVenueData();
+      applyBookingsToVenueData(result.all_bookings);
+      
+	  console.log("view3:", result.all_bookings);
+      
+	  generateCalendarForVenue(); // 在這裡直接更新畫面
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const today = new Date();
+    const sunday = new Date(today);
+    sunday.setDate(today.getDate() - today.getDay());
+    weekState[venueId] = sunday;
+    initializeVenueData();
+    applyBookingsToVenueData(rawBookings);
+
+    generateCalendarForVenue();
+    updateWeekDisplay();
+    fetchAndRenderUserBookings();
+
+    document.getElementById("court-booking-form").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const form = e.target;
+      const phone = form.phone.value;
+      const number_of_courts = parseInt(form.number_of_courts.value);
+      const start_time = form.start_time.value;
+      const time_hours = parseInt(form.time_hours.value);
+      const note = form.note.value;
+      const date = form.date.value;
+
+      let [hour, minute] = start_time.split(":").map(Number);
+      const slotList = [];
+	  
+      const res = await fetch(`/venue/${venueId}/court-booking`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone,
+          number_of_courts,
+          start_time,
+          time_hours,
+          date,
+          note
+        })
+      });
+
+        const result = await res.json();
+        if (result.status !== "ok") {
+          alert(result.message || "登記失敗");
+          return;
+        }
+
+      alert("已成功送出租借申請！");
+      form.reset();
+	  fetchAndUpdateBookings();
+      fetchAndRenderUserBookings();
+    });
+  });
+
+
+  function renderUserBookingList(bookings) {
+    const list = document.getElementById("user-booking-list");
+    const panel = document.getElementById("user-booking-panel");
+	console.log("ConsoleView2:", list);
+    if (!bookings || bookings.length === 0) {
+      panel.style.display = "none";
+      return;
+    }
+
+    panel.style.display = "block";
+    list.innerHTML = "";
+
+    bookings.forEach((b, idx) => {
+      const collapseId = `collapse-${idx}`;
+      const item = document.createElement("div");
+	  const startHour = parseInt(b.start_time.split(':')[0]);
+      const endHour = startHour + b.time_hours;	  
+      item.className = "accordion-item mb-2";
+      item.innerHTML = `
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}"
+              style="background-color: ${
+                b.status === 'pending' ? '#ECF29D' : 
+                b.status === 'cancelled' ? '#EF9A9A' : 
+                '#99E79E'
+              };">
+              ${
+                b.status === "pending" ? "確認中" : 
+                b.status === "cancelled" ? "已取消" : 
+                "已確認"
+              } ｜ <i class="fas fa-calendar-day me-1"></i>
+                  <span class="me-3">${b.date}</span>  <i class="fas fa-clock me-1"></i>${startHour} - ${endHour}點
+          </button>
+        </h2>
+        <div id="${collapseId}" class="accordion-collapse collapse">
+          <div class="accordion-body">
+            <div class="row align-items-center">
+              <div class="col-12 col-md-9">
+                <p>場地數量：${b.number_of_courts}面場, 預約時間：${b.time_hours}小時</p>
+                <p>備註：${b.note}</p>
+              </div>
+              <div class="col-12 col-md-3 text-center text-md-end">
+                <form class="cancel-booking-form mt-2 mt-md-0" data-id="${b.id}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">
+                    <i class="fas fa-times-circle me-1"></i>取消申請
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      list.appendChild(item);
+    });
+
+    document.querySelectorAll(".cancel-booking-form").forEach(form => {
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const bookingId = form.dataset.id;
+        if (!confirm("確定要取消這筆申請？")) return;
+
+        const res = await fetch(`/cancel_booking/${bookingId}`, { method: "POST" });
+        const result = await res.json();
+        if (result.status === "ok") {
+          alert("已取消！");
+          form.closest(".accordion-item").remove();
+          if (list.childElementCount === 0) {
+            panel.style.display = "none";
+          }
+        await fetchAndUpdateBookings();
+        } else {
+          alert(result.message || "取消失敗");
+        }
+      });
+    });
+  }
+</script>
+
+
 
 <style>
 .text-gradient {

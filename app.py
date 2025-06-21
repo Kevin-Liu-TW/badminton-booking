@@ -3,15 +3,15 @@ from dotenv import load_dotenv
 from config import config_map
 
 load_dotenv()
-app_env = os.environ.get("FLASK_ENV", "development")
+app_env = os.environ.get("app_env", "development")
 app_config = config_map.get(app_env, config_map["development"])
 
-from flask import Flask, render_template, request, redirect, url_for, session, flash, abort
+from flask import Flask, render_template, request, redirect, url_for, session, flash, abort, jsonify  
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager, login_user, login_required, current_user, UserMixin, logout_user
-from datetime import datetime
-from models import db, User, Venue, Timeslot, Booking,venue_managers
+from datetime import datetime, date, timedelta
+from models import db, User, Venue, Timeslot, Booking,venue_managers, CourtBooking
 
 app = Flask(__name__)
 app.config.from_object(app_config)
@@ -141,12 +141,30 @@ def venue(venue_id):
 
     venue_managers = [user.id for user in venue.managers]
 
+    court_bookings = [
+        {
+        
+            "id": b.id,
+            "date": b.date,
+            "start_time": b.start_time,
+            "time_hours": b.time_hours,
+            "status": b.status,
+            "number_of_courts": b.number_of_courts,
+            "note": b.note or ""
+        }
+        for b in CourtBooking.query.filter_by(venue_id=venue.id)
+            .filter(CourtBooking.status.in_(['pending', 'booked', 'cancelled']))
+            #.filter(CourtBooking.date >= today_str)
+            .all()
+    ]
+    
     return render_template("venue.html",
                            venue=venue,
                            timeslots=timeslots,
                            bookings=bookings,
                            venue_managers=venue_managers,
-                           selected_date=selected_date_str)
+                           selected_date=selected_date_str,
+                           court_bookings=court_bookings)
 
 @app.route('/venue/<int:venue_id>/update_rules', methods=['POST'])
 @login_required
@@ -162,7 +180,19 @@ def update_venue_rules(venue_id):
     venue.phone = request.form.get('phone', '').strip()
     venue.city = request.form.get('city', '').strip()
     venue.address = request.form.get('address', '').strip()
+
+    open_hour_str = request.form.get('openHour')
+    if open_hour_str:
+        venue.openHour = datetime.strptime(open_hour_str, '%H:%M').time()
     
+    close_hour_str = request.form.get('closeHour')
+    if close_hour_str:
+        venue.closeHour = datetime.strptime(close_hour_str, '%H:%M').time()
+    
+    position_str = request.form.get('position')
+    if position_str:
+        venue.position = int(position_str)
+
     # 更新設施 - 處理多選 checkbox
     facilities = request.form.getlist('facilities')
     venue.facilities = ','.join(facilities) if facilities else ''
@@ -262,7 +292,8 @@ def book(timeslot_id):
     db.session.commit()
     return redirect(url_for('venue', venue_id=timeslot.venue_id))
 
-# 刪除已報名資訊
+
+# 刪除零打已報名資訊
 @app.route("/delete_booking/<int:booking_id>", methods=["POST"])
 @login_required
 def delete_booking(booking_id):
@@ -285,24 +316,283 @@ def delete_booking(booking_id):
     return redirect(url_for("venue", venue_id=venue.id))
 
 
+#查詢此場館場地登記狀況
+@app.route('/venue/<int:venue_id>/bookings')
+@login_required
+def get_user_bookings(venue_id):
+    today_str = date.today()# 抓當天之後的資料
+    seven_days_ago = date.today() - timedelta(days=7)#抓上週之後的資料
+    
+    #For 個人紀錄
+    user_bookings = CourtBooking.query.filter_by(user_id=current_user.id, venue_id=venue_id)\
+        .filter(CourtBooking.date >= today_str)\
+        .order_by(CourtBooking.date, CourtBooking.start_time).all()
+    #For場館紀錄
+
+    all_bookings = CourtBooking.query.filter_by(venue_id=venue_id)\
+        .filter(CourtBooking.date >= seven_days_ago)\
+        .filter(CourtBooking.status.in_(['pending', 'booked']))\
+        .order_by(CourtBooking.date, CourtBooking.start_time).all()
+
+    return jsonify({
+        "status": "ok",
+        "user_bookings": [
+            {
+                "id": b.id,
+                "date": b.date,
+                "start_time": b.start_time,
+                "time_hours": b.time_hours,
+                "status": b.status,
+                "number_of_courts": b.number_of_courts,
+                "note": b.note or ""
+            } for b in user_bookings
+        ],
+        "all_bookings": [
+            {
+                "id": b.id,
+                "date": b.date,
+                "start_time": b.start_time,
+                "time_hours": b.time_hours,
+                "status": b.status,
+                "number_of_courts": b.number_of_courts,
+                "note": b.note or ""
+            } for b in all_bookings
+        ]
+    })
+    
+#建立場地預約資料
+@app.route('/venue/<int:venue_id>/court-booking', methods=['POST']) 
+@login_required
+def create_court_booking(venue_id):
+    try:
+        data = request.get_json()
+        phone = data.get('phone')
+        note = data.get('note', '')
+        number_of_courts = int(data.get('number_of_courts', 1))
+        
+        court_booking_date = data.get('date')
+        
+        start_time = data.get('start_time')
+        time_hours = int(data.get('time_hours', 1))
+        venue = Venue.query.get_or_404(venue_id)
+        
+        start_hour = int(start_time.split(":")[0])
+
+        open_hour = int(venue.openHour.hour)
+        close_hour = int(venue.closeHour.hour)
+        
+        booking_date = datetime.strptime(court_booking_date, "%Y-%m-%d").date()
+        now = datetime.now()
+        
+        # 檢查不能預約以前的時段
+        if booking_date < date.today():
+            return jsonify({
+                "status": "fail",
+                "message": "無法預約今天以前的日期"
+            }), 400
+        # 檢查不能預約今天中已經過去的時段
+        if booking_date == date.today() and start_hour <= now.hour:
+            return jsonify({
+                "status": "fail",
+                "message": f"時段已過，請改約{now.hour}點以後"
+            }), 400
+        
+        # 檢查是否超出場館營業時間
+        if start_hour < open_hour or (start_hour + time_hours) > close_hour:
+            return jsonify({
+                "status": "fail",
+                "message": f"預約時間超出場館營業時間 ({open_hour}:00 - {close_hour}:00)"
+            }), 400
+
+        # 每小時檢查場地是否超額
+        for offset in range(time_hours):
+            hour = start_hour + offset
+            time_str = f"{hour:02d}:00"
+            existing = db.session.query(db.func.sum(CourtBooking.number_of_courts)).filter_by(
+                venue_id=venue.id,
+                date=court_booking_date,
+                start_time=time_str
+            ).filter(CourtBooking.status.in_(['pending', 'booked', 'cancelled'])).scalar() or 0
+
+            if existing + number_of_courts > (venue.position or 0):
+                return jsonify({
+                    "status": "fail",
+                    "message": f"{time_str}～{hour+1:02d}:00 時段場地已滿"
+                }), 400
+
+        booking = CourtBooking(
+            user_id=current_user.id,
+            venue_id=venue.id,
+            phone=phone,
+            note=note,
+            number_of_courts=number_of_courts,
+            date=booking_date,
+            start_time=start_time,
+            time_hours=time_hours,
+            status='pending'
+        )
+
+        db.session.add(booking)
+        db.session.commit()
+
+        return jsonify({"status": "ok"})
+
+    except Exception as e:
+        print("❗ 錯誤：", e)
+        return jsonify({"status": "fail", "message": "系統錯誤，請稍後再試"}), 500
+
+
+# ----------------------
+# Manager Page
+# ----------------------
 @app.route('/manager')
 @login_required
 def manager_dashboard():
     if current_user.permission not in ['manager', 'admin']:
         flash("您沒有權限訪問此頁面。")
         return redirect(url_for('index'))
-
-    venues = current_user.managed_venues if current_user.permission == 'manager' else Venue.query.all()
-
-    # 預先載入 timeslots 避免 lazy loading 問題
+    
+    # 獲取場館
+    if current_user.permission == 'manager':
+        venues = current_user.managed_venues
+    else:
+        venues = current_user.managed_venues #venues = Venue.query.all()
+    
+    # 使用 joinedload 或一次性查詢所有 timeslots
+    venue_ids = [venue.id for venue in venues]
+    timeslots = Timeslot.query.filter(
+        Timeslot.venue_id.in_(venue_ids)
+    ).order_by(Timeslot.venue_id, Timeslot.date, Timeslot.start_time).all()
+    
+    # 將 timeslots 分組到對應的 venue
+    timeslots_by_venue = {}
+    for timeslot in timeslots:
+        if timeslot.venue_id not in timeslots_by_venue:
+            timeslots_by_venue[timeslot.venue_id] = []
+        timeslots_by_venue[timeslot.venue_id].append(timeslot)
+    
+    # 將 timeslots 分配給 venues
     for venue in venues:
-        venue.timeslots = Timeslot.query.filter_by(venue_id=venue.id).order_by(Timeslot.date, Timeslot.start_time).all()
+        venue.timeslots = timeslots_by_venue.get(venue.id, [])
+    
+    
+    
+    
+    # court_bookings 多場館的訂單
+    court_bookings = CourtBooking.query.filter(
+        CourtBooking.venue_id.in_(venue_ids),
+        CourtBooking.status.in_(['pending', 'booked', 'cancelled']),
+        CourtBooking.date >= date.today()
+    ).all()
+    
+    
+    # 分群：每個場館 -> pending/booked
+    court_bookings_by_venue = {}
+    for venue in venues:
+        court_bookings_by_venue[venue.id] = {
+            "pending": [],
+            "booked": [],
+            "cancelled": []
+        }
+    
+    for b in court_bookings:
+        if b.venue_id in court_bookings_by_venue:
+            court_bookings_by_venue[b.venue_id][b.status].append(b)
 
-    return render_template('manager_dashboard.html', venues=venues)
+    
+        # 若想組成字典或清單方便在模板使用：
+    court_bookings_data = [
+        {
+            "id": b.id,
+            "venue_id": b.venue_id,
+            "venue_name": b.venue.name,  # 可直接取得場館名稱
+            "user_display_name": b.user.display_name if b.user else "未知使用者",
+            "date": b.date,
+            "start_time": b.start_time,
+            "status": b.status,
+            "number_of_courts": b.number_of_courts,
+            "time_hours": b.time_hours,
+            "phone": b.phone,
+            "note": b.note
+        }
+        for b in court_bookings
+    ]
+    
+    return render_template('manager_dashboard.html',
+                           venues=venues,
+                           court_bookings_data=court_bookings_data,
+                           court_bookings_by_venue=court_bookings_by_venue)
+
+'''
+#Manager page更新場地租借狀態
+@app.route('/court_booking/<int:booking_id>/update', methods=['POST'])
+@login_required
+def update_court_booking_status(booking_id):
+    booking = CourtBooking.query.get_or_404(booking_id)
+
+    # 權限檢查：必須是場館管理員
+    if booking.venue_id not in [v.id for v in current_user.managed_venues]:
+        flash("您沒有權限修改此預約。")
+        return redirect(url_for('manager_dashboard'))
+
+    new_status = request.form.get('status')
+    if new_status not in ['booked', 'cancelled']:
+        flash("無效的狀態")
+        return redirect(url_for('manager_dashboard'))
+
+    booking.status = new_status
+    db.session.commit()
+
+    flash(f"預約已更新為 {new_status}")
+    return redirect(url_for('manager_dashboard'))
+''' 
+
+#Manager page更新場地租借狀態(single & batch)
+@app.route('/court_booking/<int:booking_id>/update', methods=['POST'])
+@app.route('/court_booking/batch_update', methods=['POST'])
+@login_required
+def update_court_booking_status(booking_id=None):
+    # 批次更新邏輯（JSON 格式）
+    if booking_id is None:
+        data = request.get_json()
+        booking_ids = data.get('ids', [])
+        new_status = data.get('status')
+        
+        if not booking_ids or new_status not in ['booked', 'cancelled']:
+            return jsonify({'status': 'fail', 'message': '參數錯誤'}), 400
+
+        bookings = CourtBooking.query.filter(CourtBooking.id.in_(booking_ids)).all()
+        venue_ids = [v.id for v in current_user.managed_venues]
+
+        for b in bookings:
+            if b.venue_id not in venue_ids:
+                return jsonify({'status': 'fail', 'message': f"您沒有修改預約 {b.id} 的權限"}), 403
+            b.status = new_status
+
+        db.session.commit()
+        return jsonify({'status': 'ok', 'message': f"已更新 {len(bookings)} 筆預約為 {new_status}"})
+
+    # 單筆更新邏輯（保留原來的功能）
+    booking = CourtBooking.query.get_or_404(booking_id)
+    if booking.venue_id not in [v.id for v in current_user.managed_venues]:
+        flash("您沒有權限修改此預約。")
+        return redirect(url_for('manager_dashboard'))
+
+    new_status = request.form.get('status')
+    if new_status not in ['booked', 'cancelled']:
+        flash("無效的狀態")
+        return redirect(url_for('manager_dashboard'))
+
+    booking.status = new_status
+    db.session.commit()
+
+    flash(f"預約已更新為 {new_status}")
+    return redirect(url_for('manager_dashboard'))
 
 
-
-
+# ----------------------
+# Admin Page
+# ----------------------
 @app.route('/admin_dashboard', methods=['GET', 'POST'])
 @login_required
 def admin_dashboard():
@@ -403,6 +693,21 @@ def update_permissions():
     db.session.commit()
     flash("使用者權限已更新", "success")
     return redirect(url_for('admin_dashboard'))
+
+
+
+#venue場地租借刪除
+@app.route('/cancel_booking/<int:booking_id>', methods=['POST'])
+@login_required
+def cancel_court_booking(booking_id):
+    from models import CourtBooking
+    booking = CourtBooking.query.get_or_404(booking_id)
+    if booking.user_id != current_user.id:
+        return jsonify({'status': 'fail', 'message': '無權限取消此申請'}), 403
+    db.session.delete(booking)
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
 
 if __name__ == "__main__":
     is_dev = app_env == "development"

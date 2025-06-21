@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="container py-4">
-  <h2 class="mb-4">場地與人員管理</h2>
+  <h2 class="mb-4">權限管理</h2>
 
   <!-- 場地管理（使用下拉選單刪除） -->
   <div class="card mb-4">
@@ -76,7 +76,7 @@
               </tr>
             </thead>
             <tbody>
-              {% for user in users if user.permission in ['manager'] %}
+              {% for user in users if user.permission in ['admin','manager'] %}
               <tr>
                 <td><input class="form-check-input" type="checkbox" name="assign_users" value="{{ user.line_id }}"></td>
                 <td>{{ user.display_name }}</td>
