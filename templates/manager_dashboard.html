@@ -270,19 +270,23 @@
                   </h6>
                   <form action="{{ url_for('add_timeslot', venue_id=venue.id) }}" method="POST">
                     <div class="row g-3">
-                      <div class="col-md-3">
+                      <div class="col-md-2">
                         <label class="form-label">日期</label>
                         <input type="date" name="date" class="form-control" required>
                       </div>
                       <div class="col-md-2"> 
                         <label class="form-label">開始時間</label>
-                        <input type="time" name="start_time" class="form-control" step="1800" required>
+                        <input type="time" name="start_time" class="form-control" required>
                       </div>
                       <div class="col-md-2">
                         <label class="form-label">結束時間</label>
-                        <input type="time" name="end_time" class="form-control" step="1800" required>
+                        <input type="time" name="end_time" class="form-control" required>
                       </div>
-                      <div class="col-md-3">
+                      <div class="col-md-2">
+                        <label class="form-label">場地數量</label>
+                        <input type="number" name="courtnumber" class="form-control" min="1" placeholder="例如: 1" required>
+                      </div>
+                      <div class="col-md-2">
                         <label class="form-label">人數上限</label>
                         <input type="number" name="capacity" class="form-control" min="1" placeholder="例如: 8" required>
                       </div>
@@ -317,7 +321,7 @@
             </div>
 		  </div>
 		  
-		  <!-- Third tab -->
+		  <!-- Third tab 場租管理 -->
           <div class="tab-pane fade" id="rent-pane-{{ venue.id }}" role="tabpanel">
 		  
 		  

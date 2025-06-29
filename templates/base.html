@@ -427,26 +427,30 @@
                 </div>
                 <div class="dropdown">
                     <button class="btn btn-outline-secondary" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <div class="hamburger-icon">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
+                      <div class="hamburger-icon">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                      </div>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                        <li><a class="dropdown-item" href="{{ url_for('index') }}">
-                            <i class="fas fa-home me-2"></i>首頁
-                        </a></li>
-                        {% if current_user.permission in ['admin', 'manager'] %}
-                            <li><a class="dropdown-item" href="{{ url_for('manager_dashboard') }}">
-                                <i class="fas fa-cogs me-2"></i>場地管理
-                            </a></li>
-                        {% endif %}
-                        {% if current_user.permission == 'admin' %}
-                            <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">
-                                <i class="fas fa-users-cog me-2"></i>權限管理
-                            </a></li>
-                        {% endif %}
+                      <li><a class="dropdown-item" href="{{ url_for('index') }}">
+                          <i class="fas fa-home me-2"></i>首頁
+                      </a></li>
+                      {% if current_user.permission in ['admin', 'manager'] %}
+                          <li><a class="dropdown-item" href="{{ url_for('manager_dashboard') }}">
+                              <i class="fas fa-cogs me-2"></i>場地管理
+                          </a></li>
+                      {% endif %}
+                      {% if current_user.permission == 'admin' %}
+                          <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">
+                              <i class="fas fa-users-cog me-2"></i>權限管理
+                          </a></li>
+                      {% endif %}
+                      <li><hr class="dropdown-divider"></li>
+                      <li><a class="dropdown-item text-danger" href="#" onclick="handleLogout()">
+                          <i class="fas fa-sign-out-alt me-2"></i>登出
+                      </a></li>
                     </ul>
                 </div>
             {% else %}
@@ -454,13 +458,6 @@
                     <i class="fas fa-sign-in-alt me-2"></i>登入
                 </button>
             {% endif %}
-{#
-            {% else %}
-                <a href="{{ url_for('liff_login') }}" class="btn btn-primary">
-                    <i class="fas fa-sign-in-alt me-2"></i>登入
-                </a>
-            {% endif %}
-#}
         </div>
     </div>
 </nav>
@@ -469,24 +466,72 @@
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <div id="flash-container" style="position: fixed; top: 20px; right: 20px; z-index: 1050; max-width: 400px;">
+            <div id="flash-container" style="position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 9999; max-width: 500px; width: 90%;">
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
-                        <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }} me-2"></i>
-                        {{ message }}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show shadow-lg" 
+                         role="alert" 
+                         style="border: none; border-radius: 10px; font-size: 16px; padding: 15px 20px; margin-bottom: 10px;">
+                        <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }} me-2" style="font-size: 18px;"></i>
+                        <strong>{{ message }}</strong>
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 {% endfor %}
             </div>
             <script>
+                // 添加滑入動畫
+                const flashContainer = document.getElementById('flash-container');
+                flashContainer.style.animation = 'slideInFromTop 0.5s ease-out';
+                
+                // 3秒後自動消失
                 setTimeout(() => {
                     const alerts = document.querySelectorAll('#flash-container .alert');
                     alerts.forEach(alert => {
-                        alert.classList.remove('show');
-                        alert.classList.add('hide');
+                        alert.style.animation = 'slideOutToTop 0.5s ease-in';
+                        setTimeout(() => {
+                            alert.remove();
+                        }, 500);
                     });
-                }, 3000);
+                }, 4000);
             </script>
+            
+            <style>
+                @keyframes slideInFromTop {
+                    from {
+                        transform: translateX(-50%) translateY(-100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(-50%) translateY(0);
+                        opacity: 1;
+                    }
+                }
+                
+                @keyframes slideOutToTop {
+                    from {
+                        transform: translateX(-50%) translateY(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateX(-50%) translateY(-100%);
+                        opacity: 0;
+                    }
+                }
+                
+                #flash-container .alert {
+                    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+                    border-left: 5px solid;
+                }
+                
+                #flash-container .alert-danger {
+                    border-left-color: #dc3545 !important;
+                    background-color: #f8d7da !important;
+                }
+                
+                #flash-container .alert-success {
+                    border-left-color: #198754 !important;
+                    background-color: #d1e7dd !important;
+                }
+            </style>
         {% endif %}
     {% endwith %}
 
@@ -495,6 +540,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+<!-- 登入JS -->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
 
@@ -562,6 +608,16 @@
                 // alert("LIFF 功能初始化失敗，部分功能可能無法使用。錯誤：" + err.message);
             });
     });
+</script>
+
+<!-- 登出JS -->
+<script>
+function handleLogout() {
+    if (window.liff && liff.isLoggedIn()) {
+        liff.logout();
+    }
+    window.location.href = "{{ url_for('logout') }}";
+}
 </script>
 
 {% block scripts %}{% endblock %}

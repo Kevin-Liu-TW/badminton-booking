@@ -15,7 +15,7 @@
 
 <ul class="nav nav-tabs mb-4" id="venueTab" role="tablist">
   <li class="nav-item" role="presentation">
-    <button class="nav-link active" id="rules-tab" data-bs-toggle="tab" data-bs-target="#tab-rules" type="button" role="tab">場地規範</button>
+    <button class="nav-link active" id="rules-tab" data-bs-toggle="tab" data-bs-target="#tab-rules" type="button" role="tab">場地資訊</button>
   </li>  
   <li class="nav-item" role="presentation">
     <button class="nav-link" id="booking-tab" data-bs-toggle="tab" data-bs-target="#tab-booking" type="button" role="tab">零打報名</button>
@@ -143,7 +143,7 @@
   </div>
 
 
-  <!-- Second tab -->
+  <!-- Second tab 零打報名-->
   <div class="tab-pane fade" id="tab-booking" role="tabpanel">
     
     <!-- Timeslots Section -->
@@ -186,7 +186,7 @@
         <button type="submit" class="btn btn-primary">篩選</button>
       </div>
       <div class="col-md-2 d-grid">
-        <a href="{{ url_for('venue', venue_id=venue.id) }}" class="btn btn-primary">清除</a>
+        <a href="{{ url_for('venue', venue_id=venue.id) }}" class="btn btn-primary">顯示全部</a>
       </div>
     </form>
 
@@ -506,7 +506,6 @@
 <script>
   const venueId = "{{ venue.id }}";
   const rawBookings = {{ court_bookings|tojson }};
-  console.log("ConsoleView1:", rawBookings);
   const venueConfig = {
     openHour: {{ venue.openHour.hour if venue.openHour else 11 }},
     closeHour: {{ (venue.closeHour.hour if venue.closeHour.hour != 0 else 24) if venue.closeHour else 13 }},
@@ -531,19 +530,19 @@
 
   function applyBookingsToVenueData(bookings) {
     const startOfWeek = new Date(weekState[venueId]); // Sunday
+	startOfWeek.setHours(0, 0, 0, 0);
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
-    
+
 	bookings.forEach(b => {
       const [year, month, day] = b.date.split("-").map(Number);
       const date = new Date(year, month - 1, day);
 	  
 	  if (date < startOfWeek || date > endOfWeek) return;
-	  
       const weekday = date.getDay();
       const startHour = parseInt(b.start_time.split(":")[0]);
       const duration = b.time_hours || 1;  // 新增欄位：持續幾小時
-  
+	  
       for (let i = 0; i < duration; i++) {
         const hour = startHour + i;
         const key = `${hour}-${weekday}`;
@@ -557,7 +556,6 @@
         } else if (b.status === 'booked') {
           venueData[venueId][key].booked += b.number_of_courts;
         }
-  
         venueData[venueId][key].available =
           venueData[venueId][key].total -
           venueData[venueId][key].pending -
@@ -567,10 +565,9 @@
   }
 
   function generateVenueBlocks(data, isPast) {
-    const block = (count, className) => {
+	const block = (count, className) => {
       const isZero = count === 0 ? 'zero-block' : '';
       const styleClass = isPast ? 'past-block' : className;
-  
       const labelMap = {
         'available-block': '可預約',
         'pending-block': '待確認',
@@ -579,10 +576,9 @@
       
       const label = labelMap[className] || '';
       const title = isPast ? '時段已過' : `${label} ${count} 個場地`;
-  
       return `<span class="venue-block ${styleClass} ${isZero}" title="${title}">${count}</span>`;
     };
-  
+
     return block(data.available, 'available-block') +
            block(data.pending, 'pending-block') +
            block(data.booked, 'booked-block');
@@ -592,7 +588,6 @@
   function generateCalendarForVenue() {
     const calendarBody = document.getElementById(`calendarBody-${venueId}`);
     if (!calendarBody || !venueData[venueId]) return;
-
     let html = '';
     for (let hour = venueConfig.openHour; hour < venueConfig.closeHour; hour++) {
       const timeLabel = `${hour.toString().padStart(2, '0')}-${(hour + 1).toString().padStart(2, '0')}`;
@@ -603,15 +598,14 @@
         const cellDate = new Date(weekState[venueId]);
         cellDate.setDate(cellDate.getDate() + day);
         cellDate.setHours(hour, 0, 0, 0);
-        
         const now = new Date();
         const isPast = cellDate < now;
-        
         const blocks = generateVenueBlocks(data, isPast);
         html += `<td class="time-slot"><div class="d-flex justify-content-center align-items-center h-100">${blocks}</div></td>`;
       }
       html += `</tr>`;
     }
+
     calendarBody.innerHTML = html;
   }
 
@@ -686,7 +680,7 @@
     weekState[venueId] = sunday;
     initializeVenueData();
     applyBookingsToVenueData(rawBookings);
-
+	
     generateCalendarForVenue();
     updateWeekDisplay();
     fetchAndRenderUserBookings();
@@ -734,7 +728,6 @@
   function renderUserBookingList(bookings) {
     const list = document.getElementById("user-booking-list");
     const panel = document.getElementById("user-booking-panel");
-	console.log("ConsoleView2:", list);
     if (!bookings || bookings.length === 0) {
       panel.style.display = "none";
       return;
