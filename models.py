@@ -65,6 +65,8 @@ class Timeslot(db.Model):
     level_max = db.Column(db.Integer, default=18, nullable=False)
 
     bookings = db.relationship('Booking', backref='timeslot', lazy=True)
+    
+    court_bookings = db.relationship('CourtBooking', backref='timeslot', lazy=True, cascade='all, delete-orphan')
 
 class Booking(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -79,14 +81,14 @@ class CourtBooking(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     venue_id = db.Column(db.Integer, db.ForeignKey('venue.id'), nullable=False)
 
+    timeslot_id = db.Column(db.Integer, db.ForeignKey('timeslot.id'), nullable=True)
+
     date = db.Column(db.Date, nullable=False)  # "2025-06-13"
     start_time = db.Column(db.String(5), nullable=False)  # e.g. "09:00"
     time_hours = db.Column(db.Integer, default=1)
     number_of_courts = db.Column(db.Integer, default=1)
-
     phone = db.Column(db.String(20))
     note = db.Column(db.Text)
-
     status = db.Column(db.String(20), default='pending')  # pending/booked/rejected/cancelled
 
     user = db.relationship('User', backref='court_bookings')

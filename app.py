@@ -59,13 +59,14 @@ def index():
                            selected_date=selected_date_str)
 
 
-
-# ----LIFF Login
 # -----------------------
+# LIFF 相關
+# -----------------------
+#====登入====
 @app.route('/liff_login', methods=['GET','POST'])
 def liff_login():
     if request.method == 'GET':
-        return "此頁僅供 LIFF 自動登入用，請從正確入口進入。", 405
+        return redirect(url_for('index'))
     # 從前端接收 LIFF 傳來的 LINE 用戶資訊
     data = request.json
     line_id = data.get('line_id')
@@ -87,12 +88,12 @@ def liff_login():
         login_user(new_user)
         return {'success': True, 'redirect_url': url_for('index')}
 
-#====應該不需要登出功能
+
+#====登出====
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
-    flash("您已成功登出。", "info")
     return redirect(url_for('index'))
 
 
@@ -134,7 +135,7 @@ def venue(venue_id):
         query = query.filter(Timeslot.level_min <= filter_level, Timeslot.level_max >= filter_level)
 
     timeslots = query.order_by(Timeslot.date.asc(), Timeslot.start_time.asc()).all()
-
+    
     bookings = {}
     for slot in timeslots:
         records = Booking.query.filter_by(timeslot_id=slot.id).all()
@@ -142,18 +143,19 @@ def venue(venue_id):
         bookings[slot.id] = {"records": records, "total": total}
 
     venue_managers = [user.id for user in venue.managers]
-
+    
     court_bookings = [
         {
         
             "id": b.id,
-            "date": b.date.strftime('%Y-%m-%d'),
+            "date": b.date.strftime('%Y-%m-%d') if b.date else "",
             "start_time": b.start_time,
             "time_hours": b.time_hours,
             "status": b.status,
             "number_of_courts": b.number_of_courts,
             "note": b.note or ""
         }
+        
         for b in CourtBooking.query.filter_by(venue_id=venue.id)
             .filter(CourtBooking.status.in_(['pending', 'booked', 'cancelled']))
             #.filter(CourtBooking.date >= today_str)
@@ -212,60 +214,6 @@ def update_venue_rules(venue_id):
         print(f"Database error: {e}")
     
     return redirect(url_for('manager_dashboard'))
-
-
-@app.route('/venue/<int:venue_id>/add_timeslot', methods=['POST'])
-@login_required
-def add_timeslot(venue_id):
-    venue = Venue.query.get_or_404(venue_id)
-
-    if current_user.permission != 'admin' and current_user not in venue.managers:
-        flash('您沒有權限新增此場地的時段。')
-        return redirect(url_for('manager_dashboard'))
-
-    date = request.form['date']
-    start_time = request.form['start_time']
-    end_time = request.form['end_time']
-    capacity = int(request.form['capacity'])
-    level_min = int(request.form.get('level_min', 1))
-    level_max = int(request.form.get('level_max', 18))
-
-    new_slot = Timeslot(
-        venue_id=venue.id,
-        date=date,
-        start_time=start_time,
-        end_time=end_time,
-        capacity=capacity,
-        level_min=level_min,
-        level_max=level_max
-    )
-    db.session.add(new_slot)
-    db.session.commit()
-    flash('新的時段已新增！')
-    return redirect(url_for('manager_dashboard'))
-
-
-
-@app.route('/timeslot/<int:timeslot_id>/delete', methods=['POST'])
-@login_required
-def delete_timeslot(timeslot_id):
-    slot = Timeslot.query.get_or_404(timeslot_id)
-    venue = Venue.query.get_or_404(slot.venue_id)
-
-    # 權限檢查：只能由該場地的 manager 或 admin 刪除
-    if current_user.permission != 'admin' and current_user not in venue.managers:
-        flash('您沒有刪除此時段的權限。')
-        return redirect(url_for('manager_dashboard'))
-
-    # 刪除該時段下的所有報名記錄（若不需要自動刪除，請移除這段）
-    Booking.query.filter_by(timeslot_id=timeslot_id).delete()
-
-    # 刪除時段
-    db.session.delete(slot)
-    db.session.commit()
-    flash('時段已成功刪除。')
-    return redirect(url_for('manager_dashboard'))
-
 
 
 @app.route('/book/<int:timeslot_id>', methods=['POST'])
@@ -341,7 +289,7 @@ def get_user_bookings(venue_id):
         "user_bookings": [
             {
                 "id": b.id,
-                "date": b.date.strftime('%Y-%m-%d'),
+                "date": b.date.strftime('%Y-%m-%d') if b.date else "",
                 "start_time": b.start_time,
                 "time_hours": b.time_hours,
                 "status": b.status,
@@ -352,7 +300,7 @@ def get_user_bookings(venue_id):
         "all_bookings": [
             {
                 "id": b.id,
-                "date": b.date.strftime('%Y-%m-%d'),
+                "date": b.date.strftime('%Y-%m-%d') if b.date else "",
                 "start_time": b.start_time,
                 "time_hours": b.time_hours,
                 "status": b.status,
@@ -458,12 +406,14 @@ def manager_dashboard():
     if current_user.permission == 'manager':
         venues = current_user.managed_venues
     else:
-        venues = current_user.managed_venues #venues = Venue.query.all()
+        venues = current_user.managed_venues
     
-    # 使用 joinedload 或一次性查詢所有 timeslots
+    today_str = date.today().strftime('%Y-%m-%d')
     venue_ids = [venue.id for venue in venues]
+    
     timeslots = Timeslot.query.filter(
-        Timeslot.venue_id.in_(venue_ids)
+        Timeslot.venue_id.in_(venue_ids),
+        Timeslot.date >= today_str
     ).order_by(Timeslot.venue_id, Timeslot.date, Timeslot.start_time).all()
     
     # 將 timeslots 分組到對應的 venue
@@ -509,7 +459,7 @@ def manager_dashboard():
             "venue_id": b.venue_id,
             "venue_name": b.venue.name,  # 可直接取得場館名稱
             "user_display_name": b.user.display_name if b.user else "未知使用者",
-            "date": b.date.strftime('%Y-%m-%d'),
+            "date": b.date.strftime('%Y-%m-%d') if b.date else "",
             "start_time": b.start_time,
             "status": b.status,
             "number_of_courts": b.number_of_courts,
@@ -525,29 +475,120 @@ def manager_dashboard():
                            court_bookings_data=court_bookings_data,
                            court_bookings_by_venue=court_bookings_by_venue)
 
-'''
-#Manager page更新場地租借狀態
-@app.route('/court_booking/<int:booking_id>/update', methods=['POST'])
+
+#新增零打場次
+@app.route('/venue/<int:venue_id>/add_timeslot', methods=['POST'])
 @login_required
-def update_court_booking_status(booking_id):
-    booking = CourtBooking.query.get_or_404(booking_id)
+def add_timeslot(venue_id):
+    venue = Venue.query.get_or_404(venue_id)
 
-    # 權限檢查：必須是場館管理員
-    if booking.venue_id not in [v.id for v in current_user.managed_venues]:
-        flash("您沒有權限修改此預約。")
+    if current_user.permission != 'admin' and current_user not in venue.managers:
+        flash('您沒有權限新增此場地的時段。')
         return redirect(url_for('manager_dashboard'))
 
-    new_status = request.form.get('status')
-    if new_status not in ['booked', 'cancelled']:
-        flash("無效的狀態")
-        return redirect(url_for('manager_dashboard'))
+    date_str = request.form['date']
+    start_time = request.form['start_time']
+    start_time = start_time.split(':')[0] + ':00'
+    
+    end_time = request.form['end_time']
+    end_time = end_time.split(':')[0] + ':00'
+    
+    capacity = int(request.form['capacity'])
+    level_min = int(request.form.get('level_min', 1))
+    level_max = int(request.form.get('level_max', 18))
 
-    booking.status = new_status
+    new_slot = Timeslot(
+        venue_id=venue.id,
+        date=date_str,
+        start_time=start_time,
+        end_time=end_time,
+        capacity=capacity,
+        level_min=level_min,
+        level_max=level_max
+    )
+    
+    # 新增CourtBooking
+    start_hour = int(start_time.split(':')[0])
+    end_hour = int(end_time.split(':')[0])
+    time_hours = end_hour - start_hour
+    number_of_courts = int(request.form['courtnumber'])
+    open_hour = int(venue.openHour.hour)
+    close_hour = int(venue.closeHour.hour)
+
+    booking_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    now = datetime.now()
+    # 檢查不能預約以前的時段
+    
+    if (booking_date == date.today() and start_hour <= now.hour) or booking_date < date.today():
+        flash('無法預約今天以前的日期', 'error')
+        return redirect(url_for('manager_dashboard'))
+    
+    # 檢查是否超出場館營業時間
+    if start_hour < open_hour or (start_hour + time_hours) > close_hour:
+        flash('預約時間超出場館營業時間 ({}:00 - {}:00)'.format(open_hour, close_hour), 'error')
+        return redirect(url_for('manager_dashboard'))
+    
+    # 每小時檢查場地是否超額
+    for offset in range(time_hours):
+        hour = start_hour + offset
+        time_str = f"{hour:02d}:00"
+        existing = db.session.query(db.func.sum(CourtBooking.number_of_courts)).filter_by(
+            venue_id=venue.id,
+            date=booking_date,
+            start_time=time_str
+        ).filter(CourtBooking.status.in_(['pending', 'booked', 'cancelled'])).scalar() or 0
+    
+        if existing + number_of_courts > (venue.position or 0):
+            flash('場地數量錯誤，請確認可使用場地數量', 'error')
+            return redirect(url_for('manager_dashboard'))
+            
+
+    db.session.add(new_slot)
+    db.session.flush()
+    
+    court_booking = CourtBooking(
+        user_id=current_user.id,
+        venue_id=venue.id,
+        phone="",
+        note="新增零打場次",
+        number_of_courts=number_of_courts,  # 你也可以設為 capacity
+        date=booking_date,
+        start_time=start_time,
+        time_hours=time_hours,
+        status='pending',
+        timeslot_id=new_slot.id
+    )
+    
+    db.session.add(court_booking)
     db.session.commit()
-
-    flash(f"預約已更新為 {new_status}")
+    flash('新的時段已新增！')
     return redirect(url_for('manager_dashboard'))
-''' 
+
+#刪除零打場次
+@app.route('/timeslot/<int:timeslot_id>/delete', methods=['POST'])
+@login_required
+def delete_timeslot(timeslot_id):
+    slot = Timeslot.query.get_or_404(timeslot_id)
+    venue = Venue.query.get_or_404(slot.venue_id)
+
+    # 權限檢查：只能由該場地的 manager 或 admin 刪除
+    if current_user.permission != 'admin' and current_user not in venue.managers:
+        flash('您沒有刪除此時段的權限。')
+        return redirect(url_for('manager_dashboard'))
+        
+    print("🚩🚩🚩 Deleting Timeslot:", slot.id)
+    
+    # 刪除該時段下的所有報名記錄
+    for booking in slot.bookings:
+        db.session.delete(booking)
+    
+    # 刪除時段
+    db.session.delete(slot)
+    db.session.commit()
+    flash('時段已成功刪除。')
+    return redirect(url_for('manager_dashboard'))
+
+
 
 #Manager page更新場地租借狀態(single & batch)
 @app.route('/court_booking/<int:booking_id>/update', methods=['POST'])
