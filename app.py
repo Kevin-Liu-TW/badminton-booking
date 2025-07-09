@@ -170,50 +170,6 @@ def venue(venue_id):
                            selected_date=selected_date_str,
                            court_bookings=court_bookings)
 
-@app.route('/venue/<int:venue_id>/update_rules', methods=['POST'])
-@login_required
-def update_venue_rules(venue_id):
-    venue = Venue.query.get_or_404(venue_id)
-
-    # 權限檢查：必須是該場地的管理員或 admin
-    if current_user.permission != 'admin' and current_user not in venue.managers:
-        flash('您沒有權限修改此場地的規則。')
-        return redirect(url_for('manager_dashboard'))
-
-    # 更新基本資訊
-    venue.phone = request.form.get('phone', '').strip()
-    venue.city = request.form.get('city', '').strip()
-    venue.address = request.form.get('address', '').strip()
-
-    open_hour_str = request.form.get('openHour')
-    if open_hour_str:
-        venue.openHour = datetime.strptime(open_hour_str, '%H:%M').time()
-    
-    close_hour_str = request.form.get('closeHour')
-    if close_hour_str:
-        venue.closeHour = datetime.strptime(close_hour_str, '%H:%M').time()
-    
-    position_str = request.form.get('position')
-    if position_str:
-        venue.position = int(position_str)
-
-    # 更新設施 - 處理多選 checkbox
-    facilities = request.form.getlist('facilities')
-    venue.facilities = ','.join(facilities) if facilities else ''
-    
-    # 更新收費規則和使用規則
-    venue.pricing = request.form.get('pricing', '').strip()
-    venue.rules = request.form.get('rules', '').strip()
-    
-    try:
-        db.session.commit()
-        flash('場地資訊已更新！', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash('更新失敗，請稍後再試。', 'error')
-        print(f"Database error: {e}")
-    
-    return redirect(url_for('manager_dashboard'))
 
 
 @app.route('/book/<int:timeslot_id>', methods=['POST'])
@@ -476,6 +432,56 @@ def manager_dashboard():
                            court_bookings_by_venue=court_bookings_by_venue)
 
 
+#更新場地資訊
+@app.route('/venue/<int:venue_id>/update_rules', methods=['POST'])
+@login_required
+def update_venue_rules(venue_id):
+    venue = Venue.query.get_or_404(venue_id)
+
+    # 權限檢查：必須是該場地的管理員或 admin
+    if current_user.permission != 'admin' and current_user not in venue.managers:
+        flash('您沒有權限修改此場地的規則。')
+        return redirect(url_for('manager_dashboard'))
+
+    # 更新基本資訊
+    venue.phone = request.form.get('phone', '').strip()
+    venue.city = request.form.get('city', '').strip()
+    venue.address = request.form.get('address', '').strip()
+
+    open_hour_str = request.form.get('openHour')
+    if open_hour_str:
+        venue.openHour = datetime.strptime(open_hour_str, '%H:%M').time()
+    
+    close_hour_str = request.form.get('closeHour')
+    if close_hour_str:
+        venue.closeHour = datetime.strptime(close_hour_str, '%H:%M').time()
+    
+    position_str = request.form.get('position')
+    if position_str:
+        venue.position = int(position_str)
+
+    # 更新設施 - 處理多選 checkbox
+    facilities = request.form.getlist('facilities')
+    venue.facilities = ','.join(facilities) if facilities else ''
+    
+    # 更新管理模式
+    venue.mode = request.form.get('mode', 'all')  # 若沒選預設為 'all'
+    
+    # 更新收費規則和使用規則
+    venue.pricing = request.form.get('pricing', '').strip()
+    venue.rules = request.form.get('rules', '').strip()
+    
+    try:
+        db.session.commit()
+        flash('場地資訊已更新！', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('更新失敗，請稍後再試。', 'error')
+        print(f"Database error: {e}")
+    
+    return redirect(url_for('manager_dashboard'))
+
+
 #新增零打場次
 @app.route('/venue/<int:venue_id>/add_timeslot', methods=['POST'])
 @login_required
@@ -506,63 +512,69 @@ def add_timeslot(venue_id):
         level_min=level_min,
         level_max=level_max
     )
-    
-    # 新增CourtBooking
-    start_hour = int(start_time.split(':')[0])
-    end_hour = int(end_time.split(':')[0])
-    time_hours = end_hour - start_hour
-    number_of_courts = int(request.form['courtnumber'])
-    open_hour = int(venue.openHour.hour)
-    close_hour = int(venue.closeHour.hour)
-
-    booking_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-    now = datetime.now()
-    # 檢查不能預約以前的時段
-    
-    if (booking_date == date.today() and start_hour <= now.hour) or booking_date < date.today():
-        flash('無法預約今天以前的日期', 'error')
-        return redirect(url_for('manager_dashboard'))
-    
-    # 檢查是否超出場館營業時間
-    if start_hour < open_hour or (start_hour + time_hours) > close_hour:
-        flash('預約時間超出場館營業時間 ({}:00 - {}:00)'.format(open_hour, close_hour), 'error')
-        return redirect(url_for('manager_dashboard'))
-    
-    # 每小時檢查場地是否超額
-    for offset in range(time_hours):
-        hour = start_hour + offset
-        time_str = f"{hour:02d}:00"
-        existing = db.session.query(db.func.sum(CourtBooking.number_of_courts)).filter_by(
-            venue_id=venue.id,
-            date=booking_date,
-            start_time=time_str
-        ).filter(CourtBooking.status.in_(['pending', 'booked', 'cancelled'])).scalar() or 0
-    
-        if existing + number_of_courts > (venue.position or 0):
-            flash('場地數量錯誤，請確認可使用場地數量', 'error')
-            return redirect(url_for('manager_dashboard'))
-            
 
     db.session.add(new_slot)
-    db.session.flush()
+    db.session.flush()  
     
-    court_booking = CourtBooking(
-        user_id=current_user.id,
-        venue_id=venue.id,
-        phone="",
-        note="新增零打場次",
-        number_of_courts=number_of_courts,  # 你也可以設為 capacity
-        date=booking_date,
-        start_time=start_time,
-        time_hours=time_hours,
-        status='pending',
-        timeslot_id=new_slot.id
-    )
-    
-    db.session.add(court_booking)
-    db.session.commit()
-    flash('新的時段已新增！')
-    return redirect(url_for('manager_dashboard'))
+    if venue.mode == 'rules_and_booking':
+        db.session.commit()
+        flash('零打時段已新增！')
+        return redirect(url_for('manager_dashboard'))
+
+    else:
+        # 新增CourtBooking
+        start_hour = int(start_time.split(':')[0])
+        end_hour = int(end_time.split(':')[0])
+        time_hours = end_hour - start_hour
+        number_of_courts = int(request.form['courtnumber'])
+        open_hour = int(venue.openHour.hour)
+        close_hour = int(venue.closeHour.hour)
+        
+        booking_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        now = datetime.now()
+        # 檢查不能預約以前的時段
+        
+        if (booking_date == date.today() and start_hour <= now.hour) or booking_date < date.today():
+            flash('無法預約今天以前的日期', 'error')
+            return redirect(url_for('manager_dashboard'))
+        
+        # 檢查是否超出場館營業時間
+        if start_hour < open_hour or (start_hour + time_hours) > close_hour:
+            flash('預約時間超出場館營業時間 ({}:00 - {}:00)'.format(open_hour, close_hour), 'error')
+            return redirect(url_for('manager_dashboard'))
+        
+        # 每小時檢查場地是否超額
+        for offset in range(time_hours):
+            hour = start_hour + offset
+            time_str = f"{hour:02d}:00"
+            existing = db.session.query(db.func.sum(CourtBooking.number_of_courts)).filter_by(
+                venue_id=venue.id,
+                date=booking_date,
+                start_time=time_str
+            ).filter(CourtBooking.status.in_(['pending', 'booked', 'cancelled'])).scalar() or 0
+        
+            if existing + number_of_courts > (venue.position or 0):
+                flash('場地數量錯誤，請確認可使用場地數量', 'error')
+                return redirect(url_for('manager_dashboard'))
+                
+        court_booking = CourtBooking(
+            user_id=current_user.id,
+            venue_id=venue.id,
+            phone="",
+            note="新增零打場次",
+            number_of_courts=number_of_courts,  # 你也可以設為 capacity
+            date=booking_date,
+            start_time=start_time,
+            time_hours=time_hours,
+            status='pending',
+            timeslot_id=new_slot.id
+        )
+        
+        db.session.add(court_booking)
+        db.session.commit()
+        
+        flash('新的時段已新增！')
+        return redirect(url_for('manager_dashboard'))
 
 #刪除零打場次
 @app.route('/timeslot/<int:timeslot_id>/delete', methods=['POST'])

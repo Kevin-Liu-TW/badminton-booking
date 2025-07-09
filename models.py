@@ -40,6 +40,9 @@ class Venue(db.Model):
     closeHour = db.Column(db.Time, nullable=True)
     position = db.Column(db.Integer, nullable=True)
     
+    #管理模式
+    mode = db.Column(db.String(50), default='all')
+    
     # 設施欄位 - 儲存為逗號分隔的字串
     facilities = db.Column(db.Text)
     

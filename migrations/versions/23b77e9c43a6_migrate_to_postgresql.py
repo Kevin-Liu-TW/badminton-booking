@@ -1,8 +1,8 @@
-"""Initial migration
+"""migrate to postgreSQL
 
-Revision ID: 88da2a2e2aa6
+Revision ID: 23b77e9c43a6
 Revises: 
-Create Date: 2025-06-29 15:35:05.361093
+Create Date: 2025-07-07 00:31:36.976576
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '88da2a2e2aa6'
+revision = '23b77e9c43a6'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -38,6 +38,7 @@ def upgrade():
     sa.Column('openHour', sa.Time(), nullable=True),
     sa.Column('closeHour', sa.Time(), nullable=True),
     sa.Column('position', sa.Integer(), nullable=True),
+    sa.Column('mode', sa.String(length=50), nullable=True),
     sa.Column('facilities', sa.Text(), nullable=True),
     sa.Column('pricing', sa.Text(), nullable=True),
     sa.Column('rules', sa.Text(), nullable=True),
@@ -84,8 +85,8 @@ def upgrade():
     sa.Column('phone', sa.String(length=20), nullable=True),
     sa.Column('note', sa.Text(), nullable=True),
     sa.Column('status', sa.String(length=20), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['timeslot_id'], ['timeslot.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.ForeignKeyConstraint(['venue_id'], ['venue.id'], ),
